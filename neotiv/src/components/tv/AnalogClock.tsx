@@ -32,18 +32,17 @@ export default function AnalogClock({ timezone, label, size = 120 }: Props) {
   return (
     <div className="flex flex-col items-center gap-1">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Face */}
-        <circle cx={cx} cy={cy} r={r - 2} fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
         {/* Hour markers */}
         {Array.from({ length: 12 }, (_, i) => {
           const angle = (i * 30 - 90) * (Math.PI / 180);
-          const outer = r - 6;
-          const inner = i % 3 === 0 ? r - 16 : r - 12;
+          const outer = r - 2;
+          const inner = i % 3 === 0 ? r - 12 : r - 8;
           return (
             <line key={i}
               x1={cx + Math.cos(angle) * inner} y1={cy + Math.sin(angle) * inner}
               x2={cx + Math.cos(angle) * outer} y2={cy + Math.sin(angle) * outer}
-              stroke="rgba(255,255,255,0.7)" strokeWidth={i % 3 === 0 ? 2 : 1} />
+              stroke={i % 3 === 0 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)"} 
+              strokeWidth={i % 3 === 0 ? 2 : 1} />
           );
         })}
         {/* Hour hand */}
@@ -55,13 +54,13 @@ export default function AnalogClock({ timezone, label, size = 120 }: Props) {
           y2={cy + Math.sin((minuteAngle - 90) * Math.PI / 180) * (r * 0.65)}
           stroke="white" strokeWidth="2" strokeLinecap="round" />
         {/* Second hand */}
-        <line x1={cx} y1={cy} x2={cx + Math.cos((secondAngle - 90) * Math.PI / 180) * (r * 0.7)}
-          y2={cy + Math.sin((secondAngle - 90) * Math.PI / 180) * (r * 0.7)}
-          stroke="#14b8a6" strokeWidth="1" strokeLinecap="round" />
+        <line x1={cx} y1={cy} x2={cx + Math.cos((secondAngle - 90) * Math.PI / 180) * (r * 0.75)}
+          y2={cy + Math.sin((secondAngle - 90) * Math.PI / 180) * (r * 0.75)}
+          stroke="#5eead4" strokeWidth="1" strokeLinecap="round" />
         {/* Center dot */}
         <circle cx={cx} cy={cy} r="3" fill="white" />
       </svg>
-      <span className="text-white/70 text-[13px]">{label}</span>
+      <span className="text-white/80 text-[13px] font-medium tracking-wide mt-2">{label}</span>
     </div>
   );
 }

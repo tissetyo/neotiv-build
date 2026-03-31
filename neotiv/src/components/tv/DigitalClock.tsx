@@ -30,22 +30,23 @@ export default function DigitalClock({ timezone, location }: Props) {
   const ampm = hours >= 12 ? 'PM' : 'AM';
   const h12 = hours % 12 || 12;
   const timeStr = `${String(h12).padStart(2, '0')}.${String(minutes).padStart(2, '0')}`;
-
-  const dateStr = tzTime.toLocaleDateString('en-US', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: timezone,
-  });
-
   return (
-    <div className="text-white">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-[18px]">☁️</span>
-        <span className="text-[18px] text-white/80">{weather.temp}°C • {location || 'Kuta, Bali'}</span>
+    <div className="flex flex-col text-white">
+      <div className="flex items-center gap-2 mb-1 text-white/80 font-medium">
+        <span className="text-[15px]">☁️</span>
+        <span className="text-[14px] tracking-wide">24°C • {location || 'Hotel'}</span>
       </div>
-      <div className="flex items-baseline gap-3">
-        <span className="text-[96px] font-bold leading-none tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>{timeStr}</span>
-        <span className="text-[36px] font-semibold text-white/80">{ampm}</span>
+      <div className="flex items-baseline gap-4 -ml-1">
+        <span className="text-[100px] font-bold leading-none font-serif tracking-tight" style={{ fontFamily: 'Georgia, serif' }}>
+          {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timezone }).replace(':', '.')}
+        </span>
+        <span className="text-2xl font-medium text-white/80 tracking-widest uppercase">
+          {time.toLocaleTimeString('en-US', { hour12: true, timeZone: timezone }).split(' ')[1]}
+        </span>
       </div>
-      <p className="text-[20px] text-white/70 mt-1">{dateStr}</p>
+      <div className="text-[18px] text-white/90 font-medium tracking-wide mt-2">
+        {time.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })}
+      </div>
     </div>
   );
 }

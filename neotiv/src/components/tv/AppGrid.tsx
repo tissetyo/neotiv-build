@@ -54,31 +54,33 @@ export default function AppGrid({ onLaunchApp, onAction, unreadChat = 0 }: AppGr
   };
 
   return (
-    <div className="h-full flex flex-col gap-2">
-      {/* Streaming apps - 2 rows of 4 */}
-      <div className="grid grid-cols-4 gap-2 flex-1">
+    <div className="h-full flex flex-col gap-4">
+      {/* Streaming apps - 2 rows of 4 using CSS grid that stretches */}
+      <div className="grid grid-cols-4 gap-4 flex-1 h-full">
         {streamingApps.map((app, i) => (
           <button key={i} onClick={() => handleAppClick(app)}
-            className="rounded-xl flex flex-col items-center justify-center text-white transition-all hover:scale-105 hover:brightness-110 tv-focusable"
+            className="rounded-2xl flex flex-col items-center justify-center text-white transition-all tv-focusable shadow-lg relative overflow-hidden group"
             tabIndex={0}
-            style={{ background: appColors[app.name] || '#334155', minHeight: '60px' }}>
-            <span className="text-[22px]">{app.icon}</span>
-            <span className="text-[10px] mt-0.5 font-medium opacity-90">{app.name}</span>
+            style={{ background: appColors[app.name] || '#334155' }}>
+            <span className="text-[48px] drop-shadow-md group-hover:scale-110 transition-transform duration-300">{app.icon}</span>
+            <span className="text-[12px] mt-2 font-medium opacity-90">{app.name}</span>
+            
+            {/* Subtle gloss effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
         ))}
       </div>
 
-      {/* Utility row - 4 small icons */}
-      <div className="grid grid-cols-4 gap-2" style={{ height: '50px' }}>
+      {/* Utility row - 4 small glass buttons */}
+      <div className="grid grid-cols-4 gap-4 h-[60px]">
         {utilityActions.map((item) => (
           <button key={item.name} onClick={() => onAction?.(item.action)}
-            className="rounded-xl flex items-center justify-center gap-1.5 text-white transition-all hover:scale-105 tv-focusable relative"
-            tabIndex={0}
-            style={{ background: item.color + '22', border: `1px solid ${item.color}44` }}>
-            <span className="text-[16px]">{item.icon}</span>
-            <span className="text-[10px] font-medium opacity-80">{item.name}</span>
+            className="rounded-xl flex items-center justify-center gap-2 text-white transition-all hover:bg-white/10 tv-focusable relative bg-white/5 border border-white/10 backdrop-blur-md"
+            tabIndex={0}>
+            <span className="text-[18px]">{item.icon}</span>
+            <span className="text-[12px] font-medium opacity-90">{item.name}</span>
             {item.action === 'chat' && unreadChat > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+              <span className="absolute -top-1.5 -right-1.5 bg-red-500 shadow-md text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
                 {unreadChat}
               </span>
             )}

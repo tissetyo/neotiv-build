@@ -27,13 +27,13 @@
 }
 
 .tv-widget {
-  background: var(--color-glass-bg);
-  border: 1px solid var(--color-glass-border);
+  background: rgba(10, 15, 25, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--widget-radius);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   padding: var(--widget-pad);
-  box-shadow: var(--shadow-widget);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
 .tv-focusable:focus,
