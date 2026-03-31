@@ -34,7 +34,7 @@ export default function AppGrid({ onLaunchApp }: AppGridProps) {
   };
 
   return (
-    <div className="h-full grid grid-cols-4 gap-[1.2vw]">
+    <div className="h-full grid grid-cols-4 gap-[0.6vw]">
       {streamingApps.map((app, i) => (
         <button key={i} onClick={() => handleAppClick(app)}
           className="tv-widget tv-app-card flex flex-col items-center justify-center text-white tv-focusable overflow-hidden group border-0 p-0"
@@ -42,15 +42,15 @@ export default function AppGrid({ onLaunchApp }: AppGridProps) {
           tabIndex={0}>
           
           {/* Logo container safely sizing the precise SVG */}
-          <div className="w-[4.5vw] h-[4.5vw] relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-md">
+          <div className="w-[2.5vw] h-[2.5vw] relative z-10 transition-transform duration-300 group-hover:scale-110">
             <img 
               src={`https://cdn.simpleicons.org/${app.logoId}/ffffff`}
               alt={app.name}
-              className="w-full h-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+              className="w-full h-full object-contain filter"
               aria-hidden="true"
             />
           </div>
-          <span className="text-[1vw] mt-[1vh] font-medium opacity-90 tv-text-shadow tracking-wider z-10">{app.name}</span>
+          <span className="text-[0.9vw] mt-[0.8vh] font-medium opacity-90 tv-text-shadow tracking-wider z-10">{app.name}</span>
         </button>
       ))}
     </div>
