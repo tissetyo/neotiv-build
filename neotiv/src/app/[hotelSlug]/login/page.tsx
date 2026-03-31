@@ -29,7 +29,7 @@ export default function StaffLoginPage({ params }: { params: Promise<{ hotelSlug
     const resolvedParams = await params;
     const slug = resolvedParams.hotelSlug;
 
-    if (role === 'manager') {
+    if (role === 'manager' || role === 'superadmin') {
       router.push(`/${slug}/frontoffice`);
     } else if (role === 'frontoffice') {
       router.push(`/${slug}/frontoffice`);
