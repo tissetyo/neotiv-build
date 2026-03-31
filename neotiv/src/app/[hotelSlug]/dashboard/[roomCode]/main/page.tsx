@@ -13,6 +13,7 @@ import HotelDeals from '@/components/tv/HotelDeals';
 import HotelService from '@/components/tv/HotelService';
 import MapWidget from '@/components/tv/MapWidget';
 import AppGrid from '@/components/tv/AppGrid';
+import UtilitySidebar from '@/components/tv/UtilitySidebar';
 import MarqueeBar from '@/components/tv/MarqueeBar';
 import ChatModal from '@/components/tv/ChatModal';
 import AlarmModal from '@/components/tv/AlarmModal';
@@ -96,7 +97,7 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
           <DigitalClock timezone={store.hotelTimezone} location={store.hotelLocation} />
         </div>
 
-        <div className="col-span-4 row-span-2 flex flex-col gap-[0.8vw] widget-animate" style={{ animationDelay: '200ms' }}>
+        <div className="col-span-3 row-span-2 flex flex-col gap-[0.8vw] widget-animate" style={{ animationDelay: '200ms' }}>
           <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} />
           <WifiCard ssid={store.wifiSsid} username={store.wifiUsername} password={store.wifiPassword} />
         </div>
@@ -109,12 +110,12 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
         {/* Open background space in center - no widget here */}
         <div className="col-span-4 row-span-3" />
 
-        <div className="col-span-4 row-span-3 widget-animate" style={{ animationDelay: '400ms' }}>
+        <div className="col-span-3 row-span-3 col-start-9 row-start-3 widget-animate" style={{ animationDelay: '400ms' }}>
           <NotificationCard roomId={store.roomId} />
         </div>
 
         {/* ── Row 6-10: Deals | Service | Map | Apps ── */}
-        <div className="col-span-2 row-span-5 widget-animate" style={{ animationDelay: '500ms' }}>
+        <div className="col-span-2 row-span-5 widget-animate p-[0_!important]" style={{ animationDelay: '500ms' }}>
           <HotelDeals />
         </div>
 
@@ -123,12 +124,15 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
           <MapWidget location={store.hotelLocation} hotelName={store.hotelName} />
         </div>
 
-        <div className="col-span-8 row-span-5 widget-animate" style={{ animationDelay: '700ms' }}>
+        <div className="col-span-7 row-span-5 col-start-5 row-start-6 widget-animate" style={{ animationDelay: '700ms' }}>
           <AppGrid
             onLaunchApp={handleLaunchApp}
-            onAction={handleAction}
-            unreadChat={store.unreadChatCount}
           />
+        </div>
+
+        {/* ── Right Edge ── */}
+        <div className="col-span-1 row-span-10 col-start-12 row-start-1 flex flex-col items-center justify-end widget-animate" style={{ animationDelay: '800ms' }}>
+           <UtilitySidebar onAction={handleAction} unreadChat={store.unreadChatCount} />
         </div>
       </div>
 

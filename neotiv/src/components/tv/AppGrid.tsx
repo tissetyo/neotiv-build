@@ -2,70 +2,57 @@
 
 import type { AppConfig } from './AppLauncher';
 
-const streamingApps: (AppConfig & { emoji: string })[] = [
-  { name: 'YouTube', icon: 'youtube', emoji: '▶️', url: 'https://www.youtube.com/tv', embeddable: true },
-  { name: 'Disney+', icon: 'disney', emoji: '🏰', url: 'https://www.disneyplus.com', embeddable: false },
-  { name: 'Netflix', icon: 'netflix', emoji: '🎬', url: 'https://www.netflix.com', embeddable: false },
-  { name: 'YT Music', icon: 'ytmusic', emoji: '🎵', url: 'https://music.youtube.com', embeddable: true },
-  { name: 'Spotify', icon: 'spotify', emoji: '🎧', url: 'https://open.spotify.com', embeddable: true },
-  { name: 'Prime', icon: 'prime', emoji: '📦', url: 'https://www.primevideo.com', embeddable: false },
-  { name: 'TV', icon: 'tv', emoji: '📺', url: '', embeddable: false },
-  { name: 'TikTok', icon: 'tiktok', emoji: '🎭', url: 'https://www.tiktok.com', embeddable: false },
-];
+// Explicitly defining exact brand colors for the card glows
+export interface BrandAppConfig extends AppConfig {
+  logoId: string;
+  brandColor: string;
+}
 
-const utilityActions = [
-  { name: 'Alarm', emoji: '⏰', action: 'alarm' },
-  { name: 'Chat', emoji: '💬', action: 'chat' },
-  { name: 'Notifications', emoji: '🔔', action: 'notifications' },
-  { name: 'Settings', emoji: '⚙️', action: 'settings' },
+const streamingApps: BrandAppConfig[] = [
+  { name: 'YouTube', logoId: 'youtube', brandColor: '#FF0000', url: 'https://www.youtube.com/tv', embeddable: true, icon: '' },
+  { name: 'Disney+', logoId: 'disneyplus', brandColor: '#113CCF', url: 'https://www.disneyplus.com', embeddable: false, icon: '' },
+  { name: 'Netflix', logoId: 'netflix', brandColor: '#E50914', url: 'https://www.netflix.com', embeddable: false, icon: '' },
+  { name: 'YT Music', logoId: 'youtubemusic', brandColor: '#FF0000', url: 'https://music.youtube.com', embeddable: true, icon: '' },
+  { name: 'Spotify', logoId: 'spotify', brandColor: '#1DB954', url: 'https://open.spotify.com', embeddable: true, icon: '' },
+  { name: 'Prime', logoId: 'primevideo', brandColor: '#00A8E1', url: 'https://www.primevideo.com', embeddable: false, icon: '' },
+  { name: 'Apple TV', logoId: 'appletv', brandColor: '#FFFFFF', url: '', embeddable: false, icon: '' },
+  { name: 'TikTok', logoId: 'tiktok', brandColor: '#EE1D52', url: 'https://www.tiktok.com', embeddable: false, icon: '' },
 ];
 
 interface AppGridProps {
   onLaunchApp?: (app: AppConfig) => void;
-  onAction?: (action: string) => void;
-  unreadChat?: number;
 }
 
-export default function AppGrid({ onLaunchApp, onAction, unreadChat = 0 }: AppGridProps) {
-  const handleAppClick = (app: AppConfig & { emoji: string }) => {
-    if (app.name === 'TV') {
+export default function AppGrid({ onLaunchApp }: AppGridProps) {
+  const handleAppClick = (app: BrandAppConfig) => {
+    if (app.name === 'Apple TV') {
       window.dispatchEvent(new CustomEvent('neotiv:switch-to-tv', { bubbles: true }));
       return;
     }
-    const { emoji, ...baseApp } = app;
+    const { logoId, brandColor, ...baseApp } = app;
     onLaunchApp?.(baseApp);
   };
 
   return (
-    <div className="h-full flex flex-col gap-[1vw]">
-      {/* Streaming apps - 2 rows of 4 */}
-      <div className="grid grid-cols-4 gap-[1vw] flex-1">
-        {streamingApps.map((app, i) => (
-          <button key={i} onClick={() => handleAppClick(app)}
-            className="tv-widget flex flex-col items-center justify-center text-white transition-all tv-focusable relative overflow-hidden group"
-            tabIndex={0}>
-            <span className="text-[3vw] group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">{app.emoji}</span>
-            <span className="text-[0.9vw] mt-[0.5vh] font-semibold tv-text-shadow tracking-wide">{app.name}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Utility row */}
-      <div className="grid grid-cols-4 gap-[1vw] h-[5vh] shrink-0">
-        {utilityActions.map((item) => (
-          <button key={item.name} onClick={() => onAction?.(item.action)}
-            className="tv-widget flex items-center justify-center gap-[0.5vw] text-white transition-all hover:brightness-110 tv-focusable relative"
-            tabIndex={0}>
-            <span className="text-[1.2vw]">{item.emoji}</span>
-            <span className="text-[0.9vw] font-semibold tv-text-shadow">{item.name}</span>
-            {item.action === 'chat' && unreadChat > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[0.7vw] w-[1.5vw] h-[1.5vw] rounded-full flex items-center justify-center font-bold">
-                {unreadChat}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+    <div className="h-full grid grid-cols-4 gap-[1.2vw]">
+      {streamingApps.map((app, i) => (
+        <button key={i} onClick={() => handleAppClick(app)}
+          className="tv-widget tv-app-card flex flex-col items-center justify-center text-white tv-focusable overflow-hidden group border-0 p-0"
+          style={{ '--app-color': app.brandColor } as React.CSSProperties}
+          tabIndex={0}>
+          
+          {/* Logo container safely sizing the precise SVG */}
+          <div className="w-[4.5vw] h-[4.5vw] relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-md">
+            <img 
+              src={`https://cdn.simpleicons.org/${app.logoId}/ffffff`}
+              alt={app.name}
+              className="w-full h-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+              aria-hidden="true"
+            />
+          </div>
+          <span className="text-[1vw] mt-[1vh] font-medium opacity-90 tv-text-shadow tracking-wider z-10">{app.name}</span>
+        </button>
+      ))}
     </div>
   );
 }
