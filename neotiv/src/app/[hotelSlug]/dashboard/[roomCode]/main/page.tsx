@@ -11,7 +11,6 @@ import FlightSchedule from '@/components/tv/FlightSchedule';
 import NotificationCard from '@/components/tv/NotificationCard';
 import HotelDeals from '@/components/tv/HotelDeals';
 import HotelService from '@/components/tv/HotelService';
-import HotelInfo from '@/components/tv/HotelInfo';
 import MapWidget from '@/components/tv/MapWidget';
 import AppGrid from '@/components/tv/AppGrid';
 import MarqueeBar from '@/components/tv/MarqueeBar';
@@ -27,7 +26,6 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
   const store = useRoomStore();
   const [mounted, setMounted] = useState(false);
 
-  // Modal states
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [launchApp, setLaunchApp] = useState<AppConfig | null>(null);
   const [requestService, setRequestService] = useState<{ id: string; name: string; icon: string | null } | null>(null);
@@ -38,11 +36,9 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
     setRequestService(null);
   }, []);
 
-  // D-pad navigation — disabled when a modal is open
   useDpadNavigation({ enabled: mounted && !activeModal && !launchApp && !requestService, onEscape: handleEscape });
 
   useEffect(() => {
-    // Load session from localStorage
     const stored = localStorage.getItem(`neotiv_room_${hotelSlug}_${roomCode}`);
     if (stored) {
       try {
@@ -69,22 +65,11 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
     setMounted(true);
   }, [hotelSlug, roomCode, store]);
 
-  // Handle action dispatches from AppGrid utility buttons
-  const handleAction = useCallback((action: string) => {
-    setActiveModal(action);
-  }, []);
+  const handleAction = useCallback((action: string) => { setActiveModal(action); }, []);
+  const handleLaunchApp = useCallback((app: AppConfig) => { setLaunchApp(app); }, []);
+  const handleServiceRequest = useCallback((service: { id: string; name: string; icon: string | null }) => { setRequestService(service); }, []);
 
-  // Handle app launch from AppGrid
-  const handleLaunchApp = useCallback((app: AppConfig) => {
-    setLaunchApp(app);
-  }, []);
-
-  // Handle service request from HotelService
-  const handleServiceRequest = useCallback((service: { id: string; name: string; icon: string | null }) => {
-    setRequestService(service);
-  }, []);
-
-  if (!mounted) return <div className="w-[1920px] h-[1080px] bg-slate-900" />;
+  if (!mounted) return <div className="w-screen h-screen bg-slate-900" />;
 
   const bgUrl = store.backgroundUrl || '/bg-ocean.png';
 
@@ -92,68 +77,63 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
     <div className="w-screen h-screen relative overflow-hidden bg-slate-900"
       style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', fontFamily: 'var(--font-body)' }}>
 
-      {/* Main Bento Grid layout */}
-      <div className="absolute inset-0 p-[2vw] grid grid-cols-12 grid-rows-12 gap-[1.5vw]" style={{ zIndex: 1, paddingBottom: '3vw' }}>
-        
-        {/* ROW BLOCK 1 (Top) */}
-        {/* Clocks */}
-        <div className="tv-widget col-span-4 row-span-2 flex items-center justify-around widget-animate tv-focusable" tabIndex={0} style={{ animationDelay: '0ms' }}>
-          <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={100} />
-          <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={120} />
-          <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={100} />
+      {/* ===== BENTO GRID ===== */}
+      <div className="absolute inset-0 grid gap-[0.8vw]" style={{
+        zIndex: 1,
+        padding: '1.5vw 1.5vw 3.5vw 1.5vw',
+        gridTemplateColumns: 'repeat(12, 1fr)',
+        gridTemplateRows: 'repeat(10, 1fr)',
+      }}>
+
+        {/* ── Row 1-2: Clocks | Digital Clock | Guest + Wifi ── */}
+        <div className="col-span-4 row-span-2 tv-widget flex items-center justify-around widget-animate tv-focusable" tabIndex={0} style={{ animationDelay: '0ms' }}>
+          <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={90} />
+          <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={110} />
+          <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={90} />
         </div>
 
-        {/* Digital Clock */}
-        <div className="col-span-4 row-span-3 flex items-start justify-center pt-[1vh] widget-animate tv-text-shadow" style={{ animationDelay: '100ms' }}>
+        <div className="col-span-4 row-span-2 flex items-center justify-center widget-animate tv-text-shadow" style={{ animationDelay: '100ms' }}>
           <DigitalClock timezone={store.hotelTimezone} location={store.hotelLocation} />
         </div>
 
-        {/* Guest Info + Wifi */}
-        <div className="col-span-4 row-span-4 flex flex-col gap-[1.5vw] widget-animate" style={{ animationDelay: '200ms' }}>
+        <div className="col-span-4 row-span-2 flex flex-col gap-[0.8vw] widget-animate" style={{ animationDelay: '200ms' }}>
           <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} />
           <WifiCard ssid={store.wifiSsid} username={store.wifiUsername} password={store.wifiPassword} />
         </div>
 
-        {/* ROW BLOCK 2 (Middle) */}
-        {/* Flight Schedule */}
-        <div className="col-span-4 row-span-4 col-start-1 row-start-3 widget-animate" style={{ animationDelay: '300ms' }}>
+        {/* ── Row 3-5: Flight Schedule | (open bg) | Notification ── */}
+        <div className="col-span-4 row-span-3 widget-animate" style={{ animationDelay: '300ms' }}>
           <FlightSchedule />
         </div>
 
-        {/* Notifications */}
-        <div className="col-span-4 row-span-2 col-start-9 row-start-5 widget-animate" style={{ animationDelay: '400ms' }}>
+        {/* Open background space in center - no widget here */}
+        <div className="col-span-4 row-span-3" />
+
+        <div className="col-span-4 row-span-3 widget-animate" style={{ animationDelay: '400ms' }}>
           <NotificationCard roomId={store.roomId} />
         </div>
 
-        {/* ROW BLOCK 3 (Bottom) */}
-        {/* Hotel Deals */}
-        <div className="col-span-3 row-span-6 col-start-1 row-start-7 widget-animate" style={{ animationDelay: '500ms' }}>
+        {/* ── Row 6-10: Deals | Service | Map | Apps ── */}
+        <div className="col-span-2 row-span-5 widget-animate" style={{ animationDelay: '500ms' }}>
           <HotelDeals />
         </div>
 
-        {/* Service */}
-        <div className="col-span-2 row-span-3 col-start-4 row-start-7 widget-animate" style={{ animationDelay: '600ms' }}>
+        <div className="col-span-2 row-span-5 flex flex-col gap-[0.8vw] widget-animate" style={{ animationDelay: '600ms' }}>
           <HotelService onRequestService={handleServiceRequest} />
-        </div>
-
-        {/* Map */}
-        <div className="col-span-2 row-span-3 col-start-4 row-start-10 widget-animate" style={{ animationDelay: '700ms' }}>
           <MapWidget location={store.hotelLocation} hotelName={store.hotelName} />
         </div>
 
-        {/* Apps & Utilities */}
-        <div className="col-span-7 row-span-6 col-start-6 row-start-7 widget-animate" style={{ animationDelay: '800ms' }}>
+        <div className="col-span-8 row-span-5 widget-animate" style={{ animationDelay: '700ms' }}>
           <AppGrid
             onLaunchApp={handleLaunchApp}
             onAction={handleAction}
             unreadChat={store.unreadChatCount}
           />
         </div>
-
       </div>
 
-      {/* Floating Marquee at absolute bottom edge */}
-      <div className="absolute bottom-0 left-0 right-0 h-[3vw] bg-black/20 backdrop-blur-md border-t border-white/10 z-10 flex items-center widget-animate" style={{ animationDelay: '900ms' }}>
+      {/* ===== MARQUEE BAR (pinned to bottom) ===== */}
+      <div className="absolute bottom-0 left-0 right-0 h-[2.5vw] z-10 flex items-center widget-animate" style={{ animationDelay: '800ms', background: 'rgba(15, 23, 42, 0.7)' }}>
         <MarqueeBar />
       </div>
 
@@ -167,7 +147,6 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
         service={requestService}
       />
 
-      {/* Connection indicator */}
       <ConnectionStatus />
     </div>
   );
