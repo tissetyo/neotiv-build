@@ -62,6 +62,7 @@ export default function AppGrid({ onLaunchApp, onAction, unreadChat = 0 }: AppGr
                 src={`https://cdn.simpleicons.org/${app.icon}/${app.logoColor}`} 
                 alt={app.name}
                 className="w-full h-full object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                style={app.logoColor === 'ffffff' ? { filter: 'brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.5))' } : {}}
               />
             </div>
             <span className="text-[1.2vw] mt-[1vh] font-medium opacity-90 tv-text-shadow tracking-wider">{app.name}</span>

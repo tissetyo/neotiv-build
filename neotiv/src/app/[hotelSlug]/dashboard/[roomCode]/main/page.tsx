@@ -92,69 +92,69 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
     <div className="w-screen h-screen relative overflow-hidden bg-slate-900"
       style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', fontFamily: 'var(--font-body)' }}>
 
-      {/* Main grid padding wrapper */}
-      <div className="absolute inset-0 p-[2.5vw] flex flex-col gap-[2vh]" style={{ zIndex: 1 }}>
-        {/* Row 1: Clocks + Weather | (space) | Guest + WiFi */}
-        <div className="flex gap-[2vw] h-[16vh] shrink-0">
-          {/* Left: Clocks */}
-          <div className="tv-widget flex items-center justify-around flex-1 max-w-[30%] widget-animate tv-focusable" tabIndex={0} style={{ animationDelay: '0ms' }}>
-            <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={110} />
-            <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={130} />
-            <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={110} />
-          </div>
-
-          {/* Center: Digital clock + weather */}
-          <div className="flex-1 flex items-start pt-[1vh] pl-[1vw] widget-animate tv-text-shadow" style={{ animationDelay: '100ms' }}>
-            <DigitalClock timezone={store.hotelTimezone} location={store.hotelLocation} />
-          </div>
-
-          {/* Right: Guest info + WiFi */}
-          <div className="flex flex-col gap-[1vh] w-[20%] widget-animate" style={{ animationDelay: '200ms' }}>
-            <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} />
-            <WifiCard ssid={store.wifiSsid} username={store.wifiUsername} password={store.wifiPassword} />
-          </div>
+      {/* Main Bento Grid layout */}
+      <div className="absolute inset-0 p-[2vw] grid grid-cols-12 grid-rows-12 gap-[1.5vw]" style={{ zIndex: 1, paddingBottom: '3vw' }}>
+        
+        {/* ROW BLOCK 1 (Top) */}
+        {/* Clocks */}
+        <div className="tv-widget col-span-4 row-span-2 flex items-center justify-around widget-animate tv-focusable" tabIndex={0} style={{ animationDelay: '0ms' }}>
+          <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={100} />
+          <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={120} />
+          <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={100} />
         </div>
 
-        {/* Row 2: Flight Schedule | (space) | Notification */}
-        <div className="flex gap-[2vw] h-[25vh] shrink-0">
-          <div className="widget-animate max-w-[30%] w-full" style={{ animationDelay: '300ms' }}>
-            <FlightSchedule />
-          </div>
-          <div className="flex-1" /> {/* Background gap */}
-          <div className="widget-animate w-[20%]" style={{ animationDelay: '400ms' }}>
-            <NotificationCard roomId={store.roomId} />
-          </div>
+        {/* Digital Clock */}
+        <div className="col-span-4 row-span-3 flex items-start justify-center pt-[1vh] widget-animate tv-text-shadow" style={{ animationDelay: '100ms' }}>
+          <DigitalClock timezone={store.hotelTimezone} location={store.hotelLocation} />
         </div>
 
-        {/* Row 3: Deals | Service + Info | Map | App Grid */}
-        <div className="flex gap-[2vw] flex-1 min-h-0">
-          {/* Deals */}
-          <div className="widget-animate w-[15%]" style={{ animationDelay: '500ms' }}>
-            <HotelDeals />
-          </div>
-          {/* Services + Info */}
-          <div className="flex flex-col gap-[2vh] widget-animate w-[12%]" style={{ animationDelay: '600ms' }}>
-            <HotelService onRequestService={handleServiceRequest} />
-            <HotelInfo hotelName={store.hotelName} />
-          </div>
-          {/* Map */}
-          <div className="widget-animate w-[15%]" style={{ animationDelay: '700ms' }}>
-            <MapWidget location={store.hotelLocation} hotelName={store.hotelName} />
-          </div>
-          {/* Apps */}
-          <div className="flex-1 widget-animate" style={{ animationDelay: '800ms' }}>
-            <AppGrid
-              onLaunchApp={handleLaunchApp}
-              onAction={handleAction}
-              unreadChat={store.unreadChatCount}
-            />
-          </div>
+        {/* Guest Info + Wifi */}
+        <div className="col-span-4 row-span-4 flex flex-col gap-[1.5vw] widget-animate" style={{ animationDelay: '200ms' }}>
+          <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} />
+          <WifiCard ssid={store.wifiSsid} username={store.wifiUsername} password={store.wifiPassword} />
         </div>
 
-        {/* Row 4: Marquee */}
-        <div className="widget-animate h-[4vh] shrink-0" style={{ animationDelay: '900ms' }}>
-          <MarqueeBar />
+        {/* ROW BLOCK 2 (Middle) */}
+        {/* Flight Schedule */}
+        <div className="col-span-4 row-span-4 col-start-1 row-start-3 widget-animate" style={{ animationDelay: '300ms' }}>
+          <FlightSchedule />
         </div>
+
+        {/* Notifications */}
+        <div className="col-span-4 row-span-2 col-start-9 row-start-5 widget-animate" style={{ animationDelay: '400ms' }}>
+          <NotificationCard roomId={store.roomId} />
+        </div>
+
+        {/* ROW BLOCK 3 (Bottom) */}
+        {/* Hotel Deals */}
+        <div className="col-span-3 row-span-6 col-start-1 row-start-7 widget-animate" style={{ animationDelay: '500ms' }}>
+          <HotelDeals />
+        </div>
+
+        {/* Service */}
+        <div className="col-span-2 row-span-3 col-start-4 row-start-7 widget-animate" style={{ animationDelay: '600ms' }}>
+          <HotelService onRequestService={handleServiceRequest} />
+        </div>
+
+        {/* Map */}
+        <div className="col-span-2 row-span-3 col-start-4 row-start-10 widget-animate" style={{ animationDelay: '700ms' }}>
+          <MapWidget location={store.hotelLocation} hotelName={store.hotelName} />
+        </div>
+
+        {/* Apps & Utilities */}
+        <div className="col-span-7 row-span-6 col-start-6 row-start-7 widget-animate" style={{ animationDelay: '800ms' }}>
+          <AppGrid
+            onLaunchApp={handleLaunchApp}
+            onAction={handleAction}
+            unreadChat={store.unreadChatCount}
+          />
+        </div>
+
+      </div>
+
+      {/* Floating Marquee at absolute bottom edge */}
+      <div className="absolute bottom-0 left-0 right-0 h-[3vw] bg-black/20 backdrop-blur-md border-t border-white/10 z-10 flex items-center widget-animate" style={{ animationDelay: '900ms' }}>
+        <MarqueeBar />
       </div>
 
       {/* Modals */}
