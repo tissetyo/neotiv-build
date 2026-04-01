@@ -13,23 +13,23 @@ export default function WifiCard({ ssid, username, password }: Props) {
 
   return (
     <div className="tv-widget-light h-full flex gap-[1vw] items-center tv-focusable" tabIndex={0}>
-      <div className="bg-white p-[0.5vw] rounded-xl flex-shrink-0 shadow-lg">
+      <div className="bg-white p-[0.5vw] rounded-xl flex-shrink-0 border border-slate-200 shadow-sm">
         <QRCode value={wifiString} size={90} level="H" />
       </div>
-      <div className="text-white flex-1 min-w-0">
-        <p className="text-[0.7vw] font-semibold tv-text-shadow mb-[0.6vh]">📶 WiFi Access</p>
+      <div className="text-slate-900 flex-1 min-w-0">
+        <p className="text-[0.7vw] font-bold mb-[0.6vh]">📶 WiFi Access</p>
         <div className="space-y-[0.4vh]">
           <div>
-            <p className="text-white/40 text-[0.5vw] uppercase tracking-wider">SSID</p>
-            <p className="text-white text-[0.7vw] font-semibold">{ssid}</p>
+            <p className="text-slate-500 text-[0.5vw] uppercase tracking-wider font-semibold">SSID</p>
+            <p className="text-slate-900 text-[0.7vw] font-bold">{ssid}</p>
           </div>
           <div>
-            <p className="text-white/40 text-[0.5vw] uppercase tracking-wider">Username</p>
-            <p className="text-white text-[0.7vw] font-semibold">{username}</p>
+            <p className="text-slate-500 text-[0.5vw] uppercase tracking-wider font-semibold">Username</p>
+            <p className="text-slate-900 text-[0.7vw] font-bold">{username}</p>
           </div>
           <div>
-            <p className="text-white/40 text-[0.5vw] uppercase tracking-wider">Password</p>
-            <p className="text-white text-[0.7vw] font-semibold">{password}</p>
+            <p className="text-slate-500 text-[0.5vw] uppercase tracking-wider font-semibold">Password</p>
+            <p className="text-slate-900 text-[0.7vw] font-bold">{password}</p>
           </div>
         </div>
       </div>
