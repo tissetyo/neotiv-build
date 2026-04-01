@@ -1,5 +1,7 @@
 'use client';
 
+import { AlarmClock, MessageCircle, Bell, Settings, LayoutGrid, Grid3x3 } from 'lucide-react';
+
 interface Props {
   onAction?: (action: string) => void;
   unreadChat?: number;
@@ -7,30 +9,41 @@ interface Props {
 
 export default function UtilitySidebar({ onAction, unreadChat = 0 }: Props) {
   const actions = [
-    { name: 'Alarm', icon: '⏰', action: 'alarm' },
-    { name: 'Chat', icon: '💬', action: 'chat' },
-    { name: 'Notifications', icon: '🔔', action: 'notifications' },
-    { name: 'Settings', icon: '⚙️', action: 'settings' },
+    { name: 'Alarm', icon: AlarmClock, action: 'alarm', color: '#f59e0b' },
+    { name: 'Chat', icon: MessageCircle, action: 'chat', color: '#14b8a6' },
+    { name: 'Notifications', icon: Bell, action: 'notifications', color: '#ef4444' },
+    { name: 'Settings', icon: Settings, action: 'settings', color: '#94a3b8' },
+    { name: 'Grid View', icon: LayoutGrid, action: 'grid', color: '#64748b' },
+    { name: 'Apps', icon: Grid3x3, action: 'apps', color: '#64748b' },
   ];
 
   return (
-    <div className="h-full w-[4vw] flex flex-col gap-[1vw] justify-end pb-[2vw]">
-      {actions.map((item) => (
-        <button
-          key={item.name}
-          onClick={() => onAction?.(item.action)}
-          className="tv-widget w-full aspect-square rounded-[1vw] flex items-center justify-center relative transition-transform tv-focusable hover:brightness-125"
-          tabIndex={0}
-          title={item.name}
-        >
-          <span className="text-[1.8vw] drop-shadow-md">{item.icon}</span>
-          {item.action === 'chat' && unreadChat > 0 && (
-            <span className="absolute -top-[0.5vw] -right-[0.5vw] bg-red-500 shadow-md text-white text-[0.8vw] w-[1.5vw] h-[1.5vw] rounded-full flex items-center justify-center font-bold border-2 border-white/20 z-10">
-              {unreadChat}
-            </span>
-          )}
-        </button>
-      ))}
+    <div className="flex flex-col gap-[0.5vw]">
+      {actions.map((item) => {
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.name}
+            onClick={() => onAction?.(item.action)}
+            className="w-[2.8vw] h-[2.8vw] rounded-[10px] flex items-center justify-center relative transition-all tv-focusable hover:brightness-125"
+            style={{
+              background: 'rgba(15, 23, 42, 0.5)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+            }}
+            tabIndex={0}
+            title={item.name}
+          >
+            <Icon size={18} color={item.color} strokeWidth={2} />
+            {item.action === 'chat' && unreadChat > 0 && (
+              <span className="absolute -top-[0.3vw] -right-[0.3vw] bg-red-500 text-white text-[0.6vw] w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center font-bold">
+                {unreadChat}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }

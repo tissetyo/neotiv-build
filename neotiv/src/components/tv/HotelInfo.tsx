@@ -6,10 +6,9 @@ interface Props {
 
 export default function HotelInfo({ hotelName }: Props) {
   return (
-    <div className="tv-widget flex-1 tv-focusable relative overflow-hidden" tabIndex={0}
-      style={{ backgroundImage: 'linear-gradient(135deg, rgba(15,23,42,0.8), rgba(15,23,42,0.6))' }}>
-      <p className="text-white text-[16px] font-semibold">Hotel Info</p>
-      <p className="text-white/70 text-[14px] mt-1">{hotelName || 'Hotel Name'}</p>
+    <div className="tv-widget flex-1 tv-focusable flex flex-col justify-center" tabIndex={0}>
+      <p className="text-white/60 text-[0.7vw] font-semibold mb-[0.3vh]">Hotel Info</p>
+      <p className="text-white text-[0.9vw] font-bold tv-text-shadow">{hotelName || 'Hotel Name'}</p>
     </div>
   );
 }

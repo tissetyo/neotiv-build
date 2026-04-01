@@ -20,114 +20,89 @@
     --color-admin-accent: #f43f5e;
     --shadow-widget: 0 8px 32px rgba(0, 0, 0, 0.4);
     --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.3);
-    --widget-gap: 16px;
-    --widget-pad: 20px;
-    --widget-radius: 16px;
+    --widget-gap: 12px;
+    --widget-pad: 16px;
+    --widget-radius: 14px;
   }
 }
 
+/* ═══════════════════════════════════════════
+   DARK FROSTED GLASS - matches reference
+   ═══════════════════════════════════════════ */
 .tv-widget {
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
   border-radius: var(--widget-radius);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 0 22px 11px rgba(255, 255, 255, 1.1);
-  position: relative;
-  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   padding: var(--widget-pad);
-}
-
-.tv-widget::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-}
-
-.tv-widget::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1px;
-  height: 100%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3));
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
 .tv-text-shadow {
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 3px rgba(0, 0, 0, 0.5);
+}
+
+/* ═══════════════════════════════════════════
+   FOCUS STATES
+   ═══════════════════════════════════════════ */
+.tv-focusable {
+  transition: all 0.25s ease;
 }
 
 .tv-focusable:focus,
 .tv-focusable:focus-visible {
   outline: 2px solid var(--color-teal);
-  outline-offset: 4px;
+  outline-offset: 3px;
 }
 
-/* Custom animated glow for App Cards */
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* ═══════════════════════════════════════════
+   APP CARD - animated border gradient on focus
+   ═══════════════════════════════════════════ */
+@keyframes gradient-rotate {
+  0% { --angle: 0deg; }
+  100% { --angle: 360deg; }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(255, 255, 255, 0.08); }
+  50% { border-color: var(--app-color); }
 }
 
 .tv-app-card {
-  --app-color: rgba(255, 255, 255, 0.2);
+  --app-color: rgba(255, 255, 255, 0.15);
   position: relative;
   transition: all 0.3s ease;
-}
-
-.tv-app-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--widget-radius);
-  padding: 3px; /* Border thickness */
-  background: linear-gradient(135deg, transparent 20%, var(--app-color) 100%);
-  background-size: 200% 200%;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  background: rgba(15, 23, 42, 0.45);
 }
 
 .tv-app-card.tv-focusable:focus,
 .tv-app-card.tv-focusable:focus-visible {
-  outline: none; /* Override default teal outline */
-  transform: scale(1.05); /* Pop out slightly */
+  outline: none;
+  transform: scale(1.06);
   z-index: 10;
+  border-color: var(--app-color);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--app-color) 30%, transparent);
+  animation: border-glow 2s ease infinite;
 }
 
-.tv-app-card.tv-focusable:focus::before {
-  opacity: 1;
-  animation: gradient-shift 3s ease infinite;
-}
-
-/* Internal radial glow from top-left corner on focus */
+/* Radial inner glow on focus */
 .tv-app-card.tv-focusable:focus::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(circle at top left, var(--app-color) 0%, transparent 70%);
-  opacity: 0.15;
+  background: radial-gradient(ellipse at top left, color-mix(in srgb, var(--app-color) 20%, transparent) 0%, transparent 70%);
   pointer-events: none;
 }
 
+/* ═══════════════════════════════════════════
+   BADGES / STATUS
+   ═══════════════════════════════════════════ */
 .glass-card {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -135,9 +110,9 @@
 .tv-badge-red {
   background: var(--color-danger);
   color: white;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 4px;
-  font-size: 16px;
+  font-size: 0.8vw;
   font-weight: 600;
 }
 
@@ -148,6 +123,9 @@
 .status-gate-open { color: #4ade80; font-weight: 700; }
 .status-check-in { color: #86efac; font-weight: 700; }
 
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════ */
 @keyframes marquee {
   from { transform: translateX(100%); }
   to { transform: translateX(-100%); }
@@ -157,14 +135,17 @@
 }
 
 @keyframes widgetMount {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .widget-animate {
   animation: widgetMount 0.5s ease-out forwards;
   opacity: 0;
 }
 
+/* ═══════════════════════════════════════════
+   UTILITY
+   ═══════════════════════════════════════════ */
 .sidebar-active {
   border-left: 4px solid var(--color-teal);
   background: var(--color-sidebar-hover);
