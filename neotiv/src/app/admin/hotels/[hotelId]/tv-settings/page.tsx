@@ -37,7 +37,9 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
       wifiCard: { visible: true },
       notificationCard: { visible: true },
       hotelService: { visible: true },
-      hotelInfo: { visible: true }
+      hotelInfo: { visible: true },
+      alarmWidget: { visible: true },
+      chatWidget: { visible: true }
     }
   };
 
@@ -293,33 +295,43 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
             <h2 className="text-lg font-bold text-slate-800 mb-4">Widget Visibility & Color</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {Object.keys(config.layout).map((key) => (
-                <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
-                  <label className="flex items-center gap-3 cursor-pointer overflow-hidden">
-                    <input
-                      type="checkbox"
-                      checked={config.layout[key].visible !== false}
-                      onChange={(e) => setConfig({
-                        ...config,
-                        layout: { ...config.layout, [key]: { ...config.layout[key], visible: e.target.checked } }
-                      })}
-                      className="w-4 h-4 text-teal-500 rounded focus:ring-teal-500 outline-none shrink-0"
-                    />
-                    <span className="font-medium text-sm text-slate-700 capitalize truncate">
-                      {key.startsWith('app-') ? (config.apps.find((a: any) => a.id === key.replace('app-', ''))?.name || key) : key.replace(/([A-Z])/g, ' $1').trim().replace('Card', '')}
-                    </span>
-                  </label>
-                  <label className="flex items-center justify-center shrink-0 cursor-pointer pl-2 border-l border-slate-200">
-                    <input
-                      title={`Theme Color for ${key}`}
-                      type="color"
-                      value={config.layout[key].bgColor || '#334155'}
-                      onChange={(e) => setConfig({
-                        ...config,
-                        layout: { ...config.layout, [key]: { ...config.layout[key], bgColor: e.target.value } }
-                      })}
-                      className="w-6 h-6 p-0 border-0 rounded cursor-pointer overflow-hidden opacity-90 hover:opacity-100 transition-opacity bg-transparent"
-                    />
-                  </label>
+                <div key={key} className="flex flex-col p-3 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-3 cursor-pointer overflow-hidden">
+                      <input
+                        type="checkbox"
+                        checked={config.layout[key].visible !== false}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          layout: { ...config.layout, [key]: { ...config.layout[key], visible: e.target.checked } }
+                        })}
+                        className="w-4 h-4 text-teal-500 rounded focus:ring-teal-500 outline-none shrink-0"
+                      />
+                      <span className="font-medium text-sm text-slate-700 capitalize truncate">
+                        {key.startsWith('app-') ? (config.apps.find((a: any) => a.id === key.replace('app-', ''))?.name || key) : key.replace(/([A-Z])/g, ' $1').trim().replace('Card', '')}
+                      </span>
+                    </label>
+                    <label className="flex items-center justify-center shrink-0 cursor-pointer pl-2 border-slate-200">
+                      <input
+                        title={`Theme Color for ${key}`}
+                        type="color"
+                        value={config.layout[key].bgColor || '#334155'}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          layout: { ...config.layout, [key]: { ...config.layout[key], bgColor: e.target.value } }
+                        })}
+                        className="w-6 h-6 p-0 border-0 rounded cursor-pointer overflow-hidden opacity-90 hover:opacity-100 transition-opacity bg-transparent"
+                      />
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/60">
+                     <span className="text-[10px] text-slate-500 uppercase font-semibold tracking-wider">Opacity</span>
+                     <input type="range" min="0" max="1" step="0.05" value={config.layout[key].bgOpacity ?? 0.6}
+                           title="Widget Background Opacity"
+                           onChange={(e) => setConfig({...config, layout: {...config.layout, [key]: {...config.layout[key], bgOpacity: parseFloat(e.target.value) } } })}
+                           className="flex-1 accent-teal-500 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                     <span className="text-[10px] text-slate-500 w-8 text-right font-mono">{Math.round((config.layout[key].bgOpacity ?? 0.6) * 100)}%</span>
+                  </div>
                 </div>
               ))}
             </div>

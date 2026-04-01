@@ -14,7 +14,6 @@ import HotelDeals from '@/components/tv/HotelDeals';
 import HotelService from '@/components/tv/HotelService';
 import HotelInfo from '@/components/tv/HotelInfo';
 import MapWidget from '@/components/tv/MapWidget';
-import UtilitySidebar from '@/components/tv/UtilitySidebar';
 import MarqueeBar from '@/components/tv/MarqueeBar';
 import ChatModal from '@/components/tv/ChatModal';
 import AlarmModal from '@/components/tv/AlarmModal';
@@ -22,6 +21,7 @@ import AppLauncher from '@/components/tv/AppLauncher';
 import ServiceRequestModal from '@/components/tv/ServiceRequestModal';
 import ConnectionStatus from '@/components/tv/ConnectionStatus';
 import type { AppConfig } from '@/components/tv/AppLauncher';
+import { AlarmClock, MessageCircle } from 'lucide-react';
 
 export default function MainDashboardPage({ params }: { params: any }) {
   // Safe unwrap for dynamic params (handles both Promise and direct object for Next.js 15/16 consistency)
@@ -104,6 +104,20 @@ export default function MainDashboardPage({ params }: { params: any }) {
       window.dispatchEvent(new CustomEvent('neotiv:switch-to-tv', { bubbles: true }));
       return;
     }
+
+    // NATIVE INTENT DETECTION (Android TV / Set Top Box)
+    // If the URL is just a package name (e.g., com.google.android.youtube.tv)
+    if (app.url && !app.url.startsWith('http') && !app.url.startsWith('intent://')) {
+      const intentUrl = `intent://#Intent;package=${app.url};scheme=https;end;`;
+      window.location.href = intentUrl;
+      return;
+    }
+    // If it's already a perfectly formatted intent
+    if (app.url && app.url.startsWith('intent://')) {
+      window.location.href = app.url;
+      return;
+    }
+
     setLaunchApp({ 
       name: app.name, 
       url: app.url, 
@@ -130,7 +144,9 @@ export default function MainDashboardPage({ params }: { params: any }) {
       wifiCard: { colStart: 9, colSpan: 3, rowStart: 3, rowSpan: 2, visible: true },
       notificationCard: { colStart: 9, colSpan: 3, rowStart: 5, rowSpan: 3, visible: true },
       hotelService: { colStart: 9, colSpan: 3, rowStart: 8, rowSpan: 3, visible: true },
-      hotelInfo: { colStart: 9, colSpan: 3, rowStart: 11, rowSpan: 2, visible: true }
+      hotelInfo: { colStart: 9, colSpan: 3, rowStart: 11, rowSpan: 2, visible: true },
+      alarmWidget: { colStart: 12, colSpan: 1, rowStart: 1, rowSpan: 1, visible: true, bgColor: '#f59e0b' },
+      chatWidget: { colStart: 12, colSpan: 1, rowStart: 2, rowSpan: 1, visible: true, bgColor: '#14b8a6' }
     }
   };
   const config = (store.tvLayoutConfig && typeof store.tvLayoutConfig === 'object' ? store.tvLayoutConfig : defaultConfig) as any;
@@ -147,12 +163,26 @@ export default function MainDashboardPage({ params }: { params: any }) {
       const rowStart = typeof dbW?.rowStart === 'number' && dbW.rowStart > 0 ? dbW.rowStart : (defW?.rowStart || 1);
       const rowSpan = typeof dbW?.rowSpan === 'number' && dbW.rowSpan > 0 ? dbW.rowSpan : (defW?.rowSpan || 1);
       const bgColor = dbW?.bgColor;
+      const bgOpacity = dbW?.bgOpacity !== undefined ? dbW.bgOpacity : 0.6;
+
+      let finalBgColor = '';
+      if (bgColor) {
+        const hex = bgColor.replace('#', '');
+        if (hex.length === 6) {
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          finalBgColor = `rgba(${r}, ${g}, ${b}, ${bgOpacity})`;
+        } else {
+          finalBgColor = `${bgColor}99`; // Fallback legacy
+        }
+      }
 
       return {
         gridColumn: `${colStart} / span ${colSpan}`,
         gridRow: `${rowStart} / span ${rowSpan}`,
         animationDelay: baseDelay,
-        ...(bgColor ? { backgroundColor: `${bgColor}99` } : {}) // Append 60% opacity hex
+        ...(finalBgColor ? { backgroundColor: finalBgColor } : {})
       };
     } catch (err) {
       console.error(`Layout Error for ${key}:`, err);
@@ -288,10 +318,35 @@ export default function MainDashboardPage({ params }: { params: any }) {
         )}
 
 
-        {/* ================= SIDEBAR ================= */}
-        <div className="col-start-12 col-span-1 row-start-1 row-span-12 flex flex-col items-center justify-center widget-animate" style={{ animationDelay: '600ms' }}>
-          <UtilitySidebar onAction={handleAction} unreadChat={store.unreadChatCount} />
-        </div>
+        {/* ================= UTILITY WIDGETS ================= */}
+        {config.layout?.alarmWidget?.visible !== false && (
+          <button 
+            onClick={() => handleAction('alarm')}
+            className="tv-app-card tv-focusable rounded-[var(--widget-radius)] flex flex-col items-center justify-center text-white group relative overflow-hidden widget-animate"
+            style={getWidgetStyle('alarmWidget', '500ms') as React.CSSProperties}
+            tabIndex={0}
+          >
+            <AlarmClock size={20} className="group-hover:scale-110 transition-transform text-white/90" strokeWidth={2.5} />
+            <span className="text-[0.6vw] font-semibold mt-1">Alarm</span>
+          </button>
+        )}
+
+        {config.layout?.chatWidget?.visible !== false && (
+          <button 
+            onClick={() => handleAction('chat')}
+            className="tv-app-card tv-focusable rounded-[var(--widget-radius)] flex flex-col items-center justify-center text-white group relative overflow-hidden widget-animate"
+            style={getWidgetStyle('chatWidget', '550ms') as React.CSSProperties}
+            tabIndex={0}
+          >
+            <MessageCircle size={20} className="group-hover:scale-110 transition-transform text-white/90" strokeWidth={2.5} />
+            <span className="text-[0.6vw] font-semibold mt-1">Chat</span>
+            {store.unreadChatCount > 0 && (
+              <span className="absolute top-1 right-1 bg-red-500 text-white text-[0.5vw] w-[1vw] h-[1vw] rounded-full flex items-center justify-center font-bold">
+                {store.unreadChatCount}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* ===== MARQUEE BAR ===== */}
