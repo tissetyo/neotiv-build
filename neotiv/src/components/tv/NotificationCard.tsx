@@ -23,7 +23,12 @@ export default function NotificationCard({ roomId }: Props) {
   });
 
   return (
-    <div className="tv-widget-light h-full flex flex-col tv-focusable relative group overflow-hidden" tabIndex={0}>
+    <div 
+      className="tv-widget-light h-full flex flex-col tv-focusable relative group overflow-hidden cursor-pointer" 
+      onClick={() => setDismissed(true)}
+      tabIndex={0}
+      title="Press Enter to dismiss"
+    >
       <button
         onClick={() => setDismissed(true)}
         className="absolute top-[0.8vw] right-[0.8vw] w-[1.5vw] h-[1.5vw] flex items-center justify-center rounded-full bg-slate-900/5 hover:bg-slate-900/15 text-slate-500 hover:text-slate-900 transition-all opacity-0 group-focus:opacity-100 group-hover:opacity-100 z-10 text-[0.7vw]"

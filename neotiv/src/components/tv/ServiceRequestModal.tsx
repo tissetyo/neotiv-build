@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useRoomStore } from '@/stores/roomStore';
+import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
 
 interface ServiceRequestModalProps {
   isOpen: boolean;
@@ -17,6 +18,8 @@ export default function ServiceRequestModal({ isOpen, onClose, service }: Servic
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const supabase = createBrowserClient();
+
+  useDpadNavigation({ enabled: isOpen && !sent, onEscape: onClose, selector: '.service-focusable' });
 
   const handleSubmit = async () => {
     if (!service || !store.roomId || !store.hotelId) return;
@@ -63,7 +66,7 @@ export default function ServiceRequestModal({ isOpen, onClose, service }: Servic
                 <span className="text-2xl">{service.icon || '🛎'}</span>
                 <h2 className="text-white text-xl font-semibold">Request {service.name}</h2>
               </div>
-              <button onClick={onClose} className="text-white/50 hover:text-white text-2xl tv-focusable" tabIndex={0}>✕</button>
+              <button onClick={onClose} className="text-white/50 hover:text-white text-2xl transition-colors service-focusable" tabIndex={0}>✕</button>
             </div>
 
             {sent ? (
@@ -84,13 +87,14 @@ export default function ServiceRequestModal({ isOpen, onClose, service }: Servic
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="e.g. Please bring extra towels"
                     rows={3}
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-teal-400 focus:outline-none resize-none"
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-teal-400 focus:outline-none resize-none service-focusable"
+                    tabIndex={0}
                   />
                 </div>
                 <button
                   onClick={handleSubmit}
                   disabled={sending}
-                  className="w-full mt-4 py-3 rounded-xl font-semibold text-white transition-all tv-focusable disabled:opacity-50"
+                  className="w-full mt-4 py-3 rounded-xl font-semibold text-white transition-all service-focusable disabled:opacity-50"
                   style={{ background: 'var(--color-teal)' }}
                   tabIndex={0}
                 >

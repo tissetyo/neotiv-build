@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useRoomStore } from '@/stores/roomStore';
+import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
 
 interface AlarmModalProps {
   isOpen: boolean;
@@ -32,6 +33,8 @@ export default function AlarmModal({ isOpen, onClose }: AlarmModalProps) {
       setAmPm('AM');
     }
   }, [isOpen]);
+
+  useDpadNavigation({ enabled: isOpen, onEscape: onClose, selector: '.alarm-focusable' });
 
   const handleSubmit = async () => {
     if (!store.roomId || !store.hotelId) return;
@@ -109,7 +112,7 @@ export default function AlarmModal({ isOpen, onClose }: AlarmModalProps) {
               </div>
               <button
                 onClick={onClose}
-                className="text-white/50 hover:text-white text-2xl transition-colors tv-focusable"
+                className="text-white/50 hover:text-white text-2xl transition-colors tv-focusable alarm-focusable"
                 tabIndex={0}
               >
                 ✕
@@ -133,7 +136,7 @@ export default function AlarmModal({ isOpen, onClose }: AlarmModalProps) {
                   <div className="flex flex-col items-center">
                     <button
                       onClick={() => adjustHours(1)}
-                      className="text-white/40 hover:text-white text-2xl p-2 tv-focusable rounded-lg"
+                      className="text-white/40 hover:text-white text-2xl p-2 alarm-focusable rounded-lg"
                       tabIndex={0}
                     >
                       ▲
@@ -144,7 +147,7 @@ export default function AlarmModal({ isOpen, onClose }: AlarmModalProps) {
                     </span>
                     <button
                       onClick={() => adjustHours(-1)}
-                      className="text-white/40 hover:text-white text-2xl p-2 tv-focusable rounded-lg"
+                      className="text-white/40 hover:text-white text-2xl p-2 alarm-focusable rounded-lg"
                       tabIndex={0}
                     >
                       ▼
@@ -157,7 +160,7 @@ export default function AlarmModal({ isOpen, onClose }: AlarmModalProps) {
                   <div className="flex flex-col items-center">
                     <button
                       onClick={() => adjustMinutes(5)}
-                      className="text-white/40 hover:text-white text-2xl p-2 tv-focusable rounded-lg"
+                      className="text-white/40 hover:text-white text-2xl p-2 alarm-focusable rounded-lg"
                       tabIndex={0}
                     >
                       ▲
@@ -168,7 +171,7 @@ export default function AlarmModal({ isOpen, onClose }: AlarmModalProps) {
                     </span>
                     <button
                       onClick={() => adjustMinutes(-5)}
-                      className="text-white/40 hover:text-white text-2xl p-2 tv-focusable rounded-lg"
+                      className="text-white/40 hover:text-white text-2xl p-2 alarm-focusable rounded-lg"
                       tabIndex={0}
                     >
                       ▼
@@ -179,7 +182,7 @@ export default function AlarmModal({ isOpen, onClose }: AlarmModalProps) {
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => setAmPm('AM')}
-                      className={`px-4 py-2 rounded-lg text-lg font-semibold transition-colors tv-focusable ${
+                      className={`px-4 py-2 rounded-lg text-lg font-semibold transition-colors alarm-focusable ${
                         amPm === 'AM' ? 'bg-teal-500 text-white' : 'bg-white/10 text-white/50'
                       }`}
                       tabIndex={0}
@@ -188,7 +191,7 @@ export default function AlarmModal({ isOpen, onClose }: AlarmModalProps) {
                     </button>
                     <button
                       onClick={() => setAmPm('PM')}
-                      className={`px-4 py-2 rounded-lg text-lg font-semibold transition-colors tv-focusable ${
+                      className={`px-4 py-2 rounded-lg text-lg font-semibold transition-colors alarm-focusable ${
                         amPm === 'PM' ? 'bg-teal-500 text-white' : 'bg-white/10 text-white/50'
                       }`}
                       tabIndex={0}
@@ -214,7 +217,7 @@ export default function AlarmModal({ isOpen, onClose }: AlarmModalProps) {
                 <button
                   onClick={handleSubmit}
                   disabled={saving}
-                  className="w-full mt-6 py-3 rounded-xl font-semibold text-white transition-all tv-focusable disabled:opacity-50"
+                  className="w-full mt-6 py-3 rounded-xl font-semibold text-white transition-all tv-focusable alarm-focusable disabled:opacity-50"
                   style={{ background: 'var(--color-teal)' }}
                   tabIndex={0}
                 >

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useRoomStore } from '@/stores/roomStore';
+import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
 
 interface ChatMessage {
   id: string;
@@ -76,6 +77,8 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
     }
   }, [isOpen]);
 
+  useDpadNavigation({ enabled: isOpen, onEscape: onClose, selector: '.chat-focusable' });
+
   const handleSend = async () => {
     if (!input.trim() || !store.roomId || !store.hotelId) return;
     setSending(true);
@@ -140,7 +143,7 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
               </div>
               <button
                 onClick={onClose}
-                className="text-white/50 hover:text-white text-2xl transition-colors tv-focusable"
+                className="text-white/50 hover:text-white text-2xl transition-colors chat-focusable"
                 tabIndex={0}
               >
                 ✕
@@ -184,12 +187,13 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
-                className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-teal-400 focus:outline-none"
+                className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-teal-400 focus:outline-none chat-focusable"
+                tabIndex={0}
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || sending}
-                className="px-6 py-3 rounded-xl font-semibold text-white transition-all tv-focusable disabled:opacity-40"
+                className="px-6 py-3 rounded-xl font-semibold text-white transition-all chat-focusable disabled:opacity-40"
                 style={{ background: 'var(--color-teal)' }}
                 tabIndex={0}
               >

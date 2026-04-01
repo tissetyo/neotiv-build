@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
+import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
 
 export interface AppConfig {
   name: string;
@@ -41,6 +42,8 @@ export default function AppLauncher({ app, isOpen, onClose }: AppLauncherProps) 
     const timer = setTimeout(() => setShowControls(false), 3000);
     return () => clearTimeout(timer);
   }, [isOpen, app]);
+
+  useDpadNavigation({ enabled: isOpen, onEscape: onClose, selector: '.app-launcher-focusable' });
 
   // Show controls on mouse move or key press
   useEffect(() => {
@@ -110,7 +113,7 @@ export default function AppLauncher({ app, isOpen, onClose }: AppLauncherProps) 
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     onClick={onClose}
-                    className="fixed top-4 left-4 z-[60] px-4 py-2 rounded-full font-semibold text-white text-sm transition-all tv-focusable"
+                    className="fixed top-4 left-4 z-[60] px-4 py-2 rounded-full font-semibold text-white text-sm transition-all tv-focusable app-launcher-focusable"
                     style={{
                       background: 'rgba(15,23,42,0.9)',
                       border: '1px solid rgba(255,255,255,0.15)',
@@ -144,7 +147,7 @@ export default function AppLauncher({ app, isOpen, onClose }: AppLauncherProps) 
                 </p>
                 <button
                   onClick={onClose}
-                  className="px-8 py-3 rounded-xl font-semibold text-white transition-all tv-focusable"
+                  className="px-8 py-3 rounded-xl font-semibold text-white transition-all tv-focusable app-launcher-focusable"
                   style={{ background: 'var(--color-teal)' }}
                   tabIndex={0}
                 >

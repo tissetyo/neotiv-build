@@ -81,12 +81,24 @@
 /* ═══════════════════════════════════════════
    FOCUS STATES (Teal Stroke)
    ═══════════════════════════════════════════ */
-.tv-focusable {
+.tv-focusable,
+.alarm-focusable,
+.chat-focusable,
+.service-focusable,
+.app-launcher-focusable {
   transition: all 0.25s ease;
 }
 
 .tv-focusable:focus,
-.tv-focusable:focus-visible {
+.tv-focusable:focus-visible,
+.alarm-focusable:focus,
+.alarm-focusable:focus-visible,
+.chat-focusable:focus,
+.chat-focusable:focus-visible,
+.service-focusable:focus,
+.service-focusable:focus-visible,
+.app-launcher-focusable:focus,
+.app-launcher-focusable:focus-visible {
   outline: 3px solid var(--color-teal);
   outline-offset: 4px;
 }
