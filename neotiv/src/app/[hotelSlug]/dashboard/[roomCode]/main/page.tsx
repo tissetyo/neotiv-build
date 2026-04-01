@@ -88,13 +88,14 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
       }}>
 
         {/* ── ROW 1-2: Analog Clocks | Digital Clock (no card) | Guest + Room ── */}
-        <div className="col-span-3 row-span-2 tv-widget flex items-center justify-around widget-animate tv-focusable" tabIndex={0}>
-          <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={80} />
-          <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={100} />
-          <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={80} />
+        <div className="col-span-4 row-span-2 tv-widget flex items-center justify-around widget-animate tv-focusable" tabIndex={0}>
+          <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={90} />
+          <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={110} />
+          <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={90} />
         </div>
 
-        <div className="col-span-5 row-span-2 flex items-center justify-center tv-text-shadow widget-animate" style={{ animationDelay: '50ms' }}>
+        {/* Gap is natural in grid. Place digital clock next to analog clocks aligned left */}
+        <div className="col-span-4 row-span-2 flex flex-col justify-center items-center tv-text-shadow widget-animate" style={{ animationDelay: '50ms' }}>
           <DigitalClock timezone={store.hotelTimezone} location={store.hotelLocation} />
         </div>
 
