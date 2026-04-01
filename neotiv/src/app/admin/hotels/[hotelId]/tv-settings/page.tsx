@@ -46,9 +46,13 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
   useEffect(() => {
     const fetchConfig = async () => {
       const { data } = await supabase.from('hotels').select('tv_layout_config').eq('id', hotelId).single();
-      let loadedConfig: any = { ...defaultConfig };
+      let loadedConfig: any = JSON.parse(JSON.stringify(defaultConfig));
       if (data && data.tv_layout_config && Object.keys(data.tv_layout_config).length > 0) {
-        loadedConfig = { ...loadedConfig, ...data.tv_layout_config };
+        loadedConfig = { 
+          ...loadedConfig, 
+          ...data.tv_layout_config,
+          layout: { ...loadedConfig.layout, ...(data.tv_layout_config.layout || {}) }
+        };
       }
       
       // Ensure all apps have a layout entry

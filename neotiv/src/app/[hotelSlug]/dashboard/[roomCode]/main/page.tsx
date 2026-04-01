@@ -182,7 +182,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
         gridColumn: `${colStart} / span ${colSpan}`,
         gridRow: `${rowStart} / span ${rowSpan}`,
         animationDelay: baseDelay,
-        ...(finalBgColor ? { backgroundColor: finalBgColor } : {})
+        ...(finalBgColor ? { '--widget-bg': finalBgColor } : {})
       };
     } catch (err) {
       console.error(`Layout Error for ${key}:`, err);
