@@ -27,30 +27,31 @@
 
 /* ═══════════════════════════════════════════
    DARK CARD — Clocks, Flight, Deals, Map
-   Dark frosted glass with white gradient stroke
+   Semi-opaque dark frosted glass
    ═══════════════════════════════════════════ */
 .tv-widget {
-  background: rgba(20, 30, 50, 0.45);
+  background: rgba(20, 30, 50, 0.60);
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
   border-radius: var(--widget-radius);
   padding: var(--widget-pad);
   position: relative;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
 }
 
 /* ═══════════════════════════════════════════
-   WHITE GLASS CARD — Guest, WiFi, Notification, Hotel Service, etc.
-   White opaque glass with white gradient stroke
+   WHITE GLASS CARD — Guest, WiFi, Notification,
+   Hotel Service, Hotel Info
+   Nearly opaque white frosted glass
    ═══════════════════════════════════════════ */
 .tv-widget-light {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
   border-radius: var(--widget-radius);
   padding: var(--widget-pad);
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 /* ═══════════════════════════════════════════
@@ -64,7 +65,7 @@
   inset: 0;
   border-radius: inherit;
   padding: 1.5px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.08) 100%);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -101,27 +102,27 @@
 .tv-app-card {
   --app-color: rgba(255, 255, 255, 0.15);
   position: relative;
-  background: rgba(20, 30, 50, 0.45);
+  background: rgba(20, 30, 50, 0.55);
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
   transition: all 0.3s ease;
 }
 
-/* Inner brand color glow block that sits behind the white stroke */
+/* Inner brand color glow from bottom-right corner */
 .tv-app-card::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: radial-gradient(circle at bottom right, var(--app-color) 0%, transparent 70%);
-  opacity: 0.15;
+  opacity: 0.18;
   pointer-events: none;
   transition: opacity 0.3s ease;
   z-index: 5;
 }
 
 .tv-app-card:hover::after {
-  opacity: 0.3;
+  opacity: 0.35;
 }
 
 .tv-app-card.tv-focusable:focus,
