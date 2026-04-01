@@ -31,6 +31,9 @@ export default function MainDashboardPage({ params }: { params: any }) {
   const roomCode = resolvedParams?.roomCode;
 
   const store = useRoomStore();
+  const hydrate = useRoomStore(s => s.hydrate);
+  const currentLayoutConfig = useRoomStore(s => s.tvLayoutConfig);
+
   const [mounted, setMounted] = useState(false);
 
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -60,10 +63,14 @@ export default function MainDashboardPage({ params }: { params: any }) {
   );
 
   useEffect(() => {
-    if (liveConfig && liveConfig.tvLayoutConfig) {
-      store.hydrate({ tvLayoutConfig: liveConfig.tvLayoutConfig });
+    if (liveConfig?.tvLayoutConfig) {
+      const incoming = JSON.stringify(liveConfig.tvLayoutConfig);
+      const current = JSON.stringify(currentLayoutConfig);
+      if (incoming !== current) {
+        hydrate({ tvLayoutConfig: liveConfig.tvLayoutConfig });
+      }
     }
-  }, [liveConfig, store]);
+  }, [liveConfig, currentLayoutConfig, hydrate]);
 
   useEffect(() => {
     const stored = localStorage.getItem(`neotiv_room_${hotelSlug}_${roomCode}`);
@@ -90,7 +97,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
       } catch { /* use defaults */ }
     }
     setMounted(true);
-  }, [hotelSlug, roomCode, store]);
+  }, [hotelSlug, roomCode, hydrate]);
 
   const handleAction = useCallback((action: string) => { setActiveModal(action); }, []);
   const handleLaunchApp = useCallback((app: AppConfig) => { setLaunchApp(app); }, []);
@@ -119,17 +126,25 @@ export default function MainDashboardPage({ params }: { params: any }) {
   };
   const config = (store.tvLayoutConfig && typeof store.tvLayoutConfig === 'object' ? store.tvLayoutConfig : defaultConfig) as any;
   
-  // Safe widget style getter
+  // Safe widget style getter with strict validation
   const getWidgetStyle = (key: string, baseDelay: string) => {
     try {
-      const w = config.layout?.[key] || (defaultConfig.layout as any)[key];
-      if (!w) return { animationDelay: baseDelay };
+      const dbW = config.layout?.[key];
+      const defW = (defaultConfig.layout as any)[key];
+      
+      // Merge: prefer DB values but require they are numbers > 0
+      const colStart = typeof dbW?.colStart === 'number' && dbW.colStart > 0 ? dbW.colStart : (defW?.colStart || 1);
+      const colSpan = typeof dbW?.colSpan === 'number' && dbW.colSpan > 0 ? dbW.colSpan : (defW?.colSpan || 1);
+      const rowStart = typeof dbW?.rowStart === 'number' && dbW.rowStart > 0 ? dbW.rowStart : (defW?.rowStart || 1);
+      const rowSpan = typeof dbW?.rowSpan === 'number' && dbW.rowSpan > 0 ? dbW.rowSpan : (defW?.rowSpan || 1);
+
       return {
-        gridColumn: w.colSpan ? `${w.colStart || 1} / span ${w.colSpan}` : undefined,
-        gridRow: w.rowSpan ? `${w.rowStart || 1} / span ${w.rowSpan}` : undefined,
+        gridColumn: `${colStart} / span ${colSpan}`,
+        gridRow: `${rowStart} / span ${rowSpan}`,
         animationDelay: baseDelay,
       };
-    } catch {
+    } catch (err) {
+      console.error(`Layout Error for ${key}:`, err);
       return { animationDelay: baseDelay };
     }
   };
