@@ -18,6 +18,7 @@ interface SessionData {
   wifiPassword: string;
   wifiUsername: string;
   welcomeMessage: string | null;
+  tvLayoutConfig?: any;
 }
 
 export default function RoomDashboardPage({ params }: { params: Promise<{ hotelSlug: string; roomCode: string }> }) {
@@ -129,16 +130,30 @@ export default function RoomDashboardPage({ params }: { params: Promise<{ hotelS
     setLoading(false);
   };
 
-  const bgUrl = session?.backgroundUrl || '/bg-ocean.png';
+  // Auto focus PIN keypad for TV remote
+  useEffect(() => {
+    if (screen === 'pin') {
+      const focusFn = () => {
+        const btn5 = document.querySelector<HTMLElement>('[data-pin-key="5"]');
+        if (btn5 && !document.activeElement?.hasAttribute('data-pin-key')) btn5.focus();
+      };
+      focusFn();
+      const t1 = setTimeout(focusFn, 300);
+      const t2 = setTimeout(focusFn, 800);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+  }, [screen]);
+
+  const bgUrl = session?.tvLayoutConfig?.theme?.bgUrl || session?.backgroundUrl || '/bg-ocean.png';
 
   // PIN ENTRY SCREEN
   if (screen === 'pin') {
     return (
-      <div className="w-[1920px] h-[1080px] relative overflow-hidden flex items-center justify-center"
+      <div className="w-screen h-screen relative overflow-hidden flex items-center justify-center"
         style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', fontFamily: 'var(--font-body)' }}>
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}
-          className="relative z-10 glass-card p-12 w-[420px] text-center text-white">
+          className="relative z-10 glass-card p-8 md:p-12 w-[90vw] max-w-[420px] text-center text-white">
           <h2 className="text-[28px] font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>Neotiv</h2>
           <p className="text-white/60 text-[18px] mb-8">Room {roomCode}</p>
           <p className="text-[20px] mb-6">Enter PIN</p>
@@ -171,7 +186,7 @@ export default function RoomDashboardPage({ params }: { params: Promise<{ hotelS
 
   // WELCOME SCREEN (Frame 3)
   return (
-    <div className="w-[1920px] h-[1080px] relative overflow-hidden"
+    <div className="w-screen h-screen relative overflow-hidden"
       style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', fontFamily: 'var(--font-body)' }}>
 
       {/* Room number top-right */}

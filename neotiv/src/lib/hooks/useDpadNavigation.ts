@@ -168,16 +168,25 @@ export function useDpadNavigation(options?: {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [enabled, handleKeyDown]);
 
-  // Auto-focus first element on mount
+  // Aggressively capture initial state to disable TV virtual cursor mode
   useEffect(() => {
     if (!enabled) return;
-    const timer = setTimeout(() => {
+    
+    const tryFocus = () => {
       const elements = getFocusableElements();
-      if (elements.length > 0 && !document.activeElement?.classList.contains('tv-focusable')) {
+      const hasActiveFocus = document.activeElement && document.activeElement.classList.contains(selector.replace('.', ''));
+      
+      if (elements.length > 0 && !hasActiveFocus) {
         elements[0].focus();
         currentIndexRef.current = 0;
       }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [enabled, getFocusableElements]);
+    };
+
+    tryFocus(); // Attempt immediately
+    const t1 = setTimeout(tryFocus, 100);
+    const t2 = setTimeout(tryFocus, 350);
+    const t3 = setTimeout(tryFocus, 800);
+
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [enabled, getFocusableElements, selector]);
 }

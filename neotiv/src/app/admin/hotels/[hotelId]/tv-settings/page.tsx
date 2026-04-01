@@ -11,8 +11,10 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingBg, setUploadingBg] = useState(false);
   const [config, setConfig] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bgInputRef = useRef<HTMLInputElement>(null);
   const [activeAppIndex, setActiveAppIndex] = useState<number | null>(null);
 
   const defaultConfig = {
@@ -103,6 +105,30 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
     setActiveAppIndex(null);
+  };
+
+  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingBg(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('hotel_id', hotelId);
+
+    try {
+      const res = await fetch('/api/upload/hotel-background', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.url) {
+        setConfig({ ...config, theme: { ...config.theme, bgUrl: data.url } });
+      } else {
+        alert(data.error || 'Upload failed');
+      }
+    } catch {
+      alert('Upload failed');
+    }
+    if (bgInputRef.current) bgInputRef.current.value = '';
+    setUploadingBg(false);
   };
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -318,6 +344,34 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
                   onChange={(e) => setConfig({ ...config, theme: { ...config.theme, opacityDark: parseFloat(e.target.value) } })}
                   className="w-full accent-teal-500" />
               </div>
+
+              <div className="pt-4 border-t border-slate-100">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Dashboard Background</label>
+                <div className="flex items-center gap-4">
+                  {config.theme.bgUrl ? (
+                    <div className="w-24 h-16 rounded border border-slate-200 overflow-hidden relative group shrink-0 shadow-sm">
+                      <img src={config.theme.bgUrl} alt="Background" className="w-full h-full object-cover" />
+                      <button onClick={() => setConfig({ ...config, theme: { ...config.theme, bgUrl: null } })}
+                        className="absolute inset-0 bg-black/60 text-white text-xs font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        Clear
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-16 rounded border border-dashed border-slate-300 flex items-center justify-center text-slate-400 bg-slate-50 shrink-0 text-xs shadow-inner">
+                      Default Ocean
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input type="file" ref={bgInputRef} className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleBgUpload} />
+                    <button onClick={() => bgInputRef.current?.click()} disabled={uploadingBg}
+                      className="text-xs px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors border border-slate-200 shadow-sm w-full text-left flex justify-between items-center">
+                      {uploadingBg ? 'Uploading...' : 'Upload Image'} <span className="text-[10px] text-slate-400 uppercase font-mono">JPG/PNG</span>
+                    </button>
+                    <p className="text-[10px] text-slate-500 mt-1.5 leading-tight">Recommended size: 1920x1080px. Clear this to restore default.</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 

@@ -115,7 +115,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
 
   if (!mounted) return <div className="w-screen h-screen bg-slate-900" />;
 
-  const bgUrl = store.backgroundUrl || '/bg-ocean.png';
+  const bgUrl = (store.tvLayoutConfig as any)?.theme?.bgUrl || store.backgroundUrl || '/bg-ocean.png';
 
   const defaultConfig = {
     theme: { opacityLight: 0.82, opacityDark: 0.60 },
