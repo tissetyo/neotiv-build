@@ -18,26 +18,26 @@ export default function UtilitySidebar({ onAction, unreadChat = 0 }: Props) {
   ];
 
   return (
-    <div className="flex flex-col gap-[0.5vw]">
+    <div className="flex flex-col gap-[0.4vw]">
       {actions.map((item) => {
         const Icon = item.icon;
         return (
           <button
             key={item.name}
             onClick={() => onAction?.(item.action)}
-            className="w-[2.8vw] h-[2.8vw] rounded-[10px] flex items-center justify-center relative transition-all tv-focusable hover:brightness-125"
+            className="w-[2.2vw] h-[2.2vw] rounded-[8px] flex items-center justify-center relative transition-all tv-focusable hover:brightness-125"
             style={{
-              background: 'rgba(15, 23, 42, 0.5)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(15, 23, 42, 0.72)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
             }}
             tabIndex={0}
             title={item.name}
           >
-            <Icon size={18} color={item.color} strokeWidth={2} />
+            <Icon size={14} color={item.color} strokeWidth={2} />
             {item.action === 'chat' && unreadChat > 0 && (
-              <span className="absolute -top-[0.3vw] -right-[0.3vw] bg-red-500 text-white text-[0.6vw] w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center font-bold">
+              <span className="absolute -top-[0.2vw] -right-[0.2vw] bg-red-500 text-white text-[0.5vw] w-[1vw] h-[1vw] rounded-full flex items-center justify-center font-bold">
                 {unreadChat}
               </span>
             )}
