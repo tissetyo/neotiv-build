@@ -16,10 +16,21 @@ export default function AnalogClock({ timezone, label, size = 120 }: Props) {
     return () => clearInterval(interval);
   }, []);
 
-  const tzTime = new Date(time.toLocaleString('en-US', { timeZone: timezone }));
-  const hours = tzTime.getHours() % 12;
-  const minutes = tzTime.getMinutes();
-  const seconds = tzTime.getSeconds();
+  let hours = 0;
+  let minutes = 0;
+  let seconds = 0;
+
+  try {
+    const tzTime = new Date(time.toLocaleString('en-US', { timeZone: timezone }));
+    hours = tzTime.getHours() % 12;
+    minutes = tzTime.getMinutes();
+    seconds = tzTime.getSeconds();
+  } catch (e) {
+    // Fallback to local system time if timezone is invalid
+    hours = time.getHours() % 12;
+    minutes = time.getMinutes();
+    seconds = time.getSeconds();
+  }
 
   const hourAngle = (hours + minutes / 60) * 30;
   const minuteAngle = (minutes + seconds / 60) * 6;

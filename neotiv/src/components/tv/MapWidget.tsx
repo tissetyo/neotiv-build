@@ -12,7 +12,7 @@ export default function MapWidget({ location, hotelName }: Props) {
   return (
     <div className="tv-widget h-full tv-focusable overflow-hidden p-0" tabIndex={0}>
       <div className="w-full h-full rounded-2xl overflow-hidden bg-slate-800 relative flex items-center justify-center">
-        {(process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY && !process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY.includes('your_')) ? (
+        {(process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY && !process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY?.includes('your_')) ? (
           <iframe
             src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY}&q=${query}&zoom=15`}
             width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy"

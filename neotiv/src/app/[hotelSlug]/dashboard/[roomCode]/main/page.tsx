@@ -24,8 +24,12 @@ import ServiceRequestModal from '@/components/tv/ServiceRequestModal';
 import ConnectionStatus from '@/components/tv/ConnectionStatus';
 import type { AppConfig } from '@/components/tv/AppLauncher';
 
-export default function MainDashboardPage({ params }: { params: Promise<{ hotelSlug: string; roomCode: string }> }) {
-  const { hotelSlug, roomCode } = use(params);
+export default function MainDashboardPage({ params }: { params: any }) {
+  // Safe unwrap for dynamic params (handles both Promise and direct object for Next.js 15/16 consistency)
+  const resolvedParams = params instanceof Promise ? use(params) : params;
+  const hotelSlug = resolvedParams?.hotelSlug;
+  const roomCode = resolvedParams?.roomCode;
+
   const store = useRoomStore();
   const [mounted, setMounted] = useState(false);
 
@@ -43,7 +47,15 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
 
   const { data: liveConfig } = useSWR(
     mounted ? `/api/hotel/${hotelSlug}/tv-config` : null,
-    (url: string) => fetch(url).then((res) => res.json()),
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('TV Config Fetch Failed:', errorText);
+        return null;
+      }
+      return res.json();
+    },
     { refreshInterval: 60000 } // Check every minute
   );
 
