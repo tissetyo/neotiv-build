@@ -21,6 +21,7 @@ export interface Hotel {
   airport_iata_code: string | null;
   latitude: number | null;
   longitude: number | null;
+  tv_layout_config?: Record<string, any> | null;
   is_active: boolean;
   created_at: string;
 }

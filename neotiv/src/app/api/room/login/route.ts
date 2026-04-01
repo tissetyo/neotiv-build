@@ -61,6 +61,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       clockLabels: [hotel.clock_label_1, hotel.clock_label_2, hotel.clock_label_3],
       airportCode: hotel.airport_iata_code,
       welcomeMessage: room.custom_welcome_message,
+      tvLayoutConfig: hotel.tv_layout_config,
     });
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

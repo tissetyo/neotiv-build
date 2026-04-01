@@ -21,33 +21,48 @@ const streamingApps: BrandAppConfig[] = [
   { name: 'TikTok', brandColor: '#EE1D52', url: 'https://www.tiktok.com', embeddable: false, icon: '', Icon: SiTiktok },
 ];
 
+import { useRoomStore } from '@/stores/roomStore';
+
 interface AppGridProps {
   onLaunchApp?: (app: AppConfig) => void;
 }
 
 export default function AppGrid({ onLaunchApp }: AppGridProps) {
-  const handleAppClick = (app: BrandAppConfig) => {
+  const store = useRoomStore();
+  const customApps = store.tvLayoutConfig?.apps;
+
+  const handleAppClick = (app: any) => {
     if (app.name === 'TV') {
       window.dispatchEvent(new CustomEvent('neotiv:switch-to-tv', { bubbles: true }));
       return;
     }
-    const { brandColor, Icon, subtitle, ...baseApp } = app;
-    onLaunchApp?.(baseApp);
+    onLaunchApp?.({ 
+      name: app.name, 
+      url: app.url, 
+      embeddable: app.embeddable || false, 
+      icon: typeof app.icon === 'string' ? app.icon : '' 
+    });
   };
+
+  const appsToRender = customApps && customApps.length > 0 ? customApps : streamingApps;
 
   return (
     <div className="h-full grid grid-cols-4 grid-rows-2 gap-[0.5vw]">
-      {streamingApps.map((app, i) => (
+      {appsToRender.slice(0, 8).map((app: any, i: number) => (
         <button key={i} onClick={() => handleAppClick(app)}
-          className="tv-app-card tv-focusable rounded-[var(--widget-radius)] flex flex-col items-center justify-center text-white group"
-          style={{ '--app-color': app.brandColor } as React.CSSProperties}
+          className="tv-app-card tv-focusable rounded-[var(--widget-radius)] flex flex-col items-center justify-center text-white group relative overflow-hidden"
+          style={{ '--app-color': app.brandColor || '#334155' } as React.CSSProperties}
           tabIndex={0}>
 
-          <div className="text-[1.8vw] group-hover:scale-110 transition-transform duration-300 relative z-10"
-            style={{ color: app.brandColor }}>
-            <app.Icon />
+          <div className="w-[1.8vw] h-[1.8vw] group-hover:scale-110 transition-transform duration-300 relative z-10 flex items-center justify-center"
+            style={{ color: app.brandColor || '#e2e8f0' }}>
+            {app.icon && typeof app.icon === 'string' && app.icon.startsWith('/') || app.icon?.startsWith('http') ? (
+               <img src={app.icon} alt={app.name} className="w-full h-full object-contain" />
+            ) : app.Icon ? (
+               <app.Icon className="w-full h-full" />
+            ) : null}
           </div>
-          <span className="text-[0.7vw] font-semibold mt-[0.4vh] tracking-wide relative z-10">{app.name}</span>
+          <span className="text-[0.7vw] font-semibold mt-[0.4vh] tracking-wide relative z-10 truncate px-2 w-full text-center">{app.name}</span>
           {app.subtitle && (
             <span className="text-[0.5vw] text-white/40 mt-[0.1vh] relative z-10">{app.subtitle}</span>
           )}

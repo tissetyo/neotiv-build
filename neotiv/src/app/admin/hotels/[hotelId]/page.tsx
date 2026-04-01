@@ -194,6 +194,12 @@ export default function HotelDetailPage({ params }: { params: Promise<{ hotelId:
             Open Hotel Panel →
           </button>
           <button
+            onClick={() => router.push(`/admin/hotels/${hotelId}/tv-settings`)}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200"
+          >
+            📺 TV Dashboard Settings
+          </button>
+          <button
             onClick={toggleHotelStatus}
             disabled={actionLoading}
             className={`px-4 py-2 rounded-lg text-sm font-medium ${

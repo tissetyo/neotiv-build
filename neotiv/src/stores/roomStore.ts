@@ -22,6 +22,7 @@ interface RoomState {
   promos: Promo[];
   services: Service[];
   announcements: Announcement[];
+  tvLayoutConfig: Record<string, any> | null;
   unreadChatCount: number;
   hydrate: (data: Partial<RoomState>) => void;
   setNotification: (n: Notification) => void;
@@ -50,6 +51,7 @@ const initialState = {
   promos: [],
   services: [],
   announcements: [],
+  tvLayoutConfig: null,
   unreadChatCount: 0,
 };
 
@@ -78,6 +80,7 @@ export const useRoomStore = create<RoomState>()(
         clockLabels: state.clockLabels,
         services: state.services,
         announcements: state.announcements,
+        tvLayoutConfig: state.tvLayoutConfig,
       }),
     }
   )

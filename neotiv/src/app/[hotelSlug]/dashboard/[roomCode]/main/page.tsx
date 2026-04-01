@@ -75,9 +75,34 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
 
   const bgUrl = store.backgroundUrl || '/bg-ocean.png';
 
+  const defaultConfig = {
+    theme: { opacityLight: 0.82, opacityDark: 0.60 },
+    apps: [],
+    layout: {
+      analogClocks: { visible: true },
+      flightSchedule: { visible: true },
+      hotelDeals: { visible: true },
+      digitalClock: { visible: true },
+      mapWidget: { visible: true },
+      appGrid: { visible: true },
+      guestCard: { visible: true },
+      wifiCard: { visible: true },
+      notificationCard: { visible: true },
+      hotelService: { visible: true },
+      hotelInfo: { visible: true }
+    }
+  };
+  const config = (store.tvLayoutConfig || defaultConfig) as any;
+
   return (
-    <div className="w-screen h-screen relative overflow-hidden bg-slate-900"
-      style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div className="w-screen h-screen relative overflow-hidden bg-slate-900"
+        style={{ 
+          backgroundImage: `url(${bgUrl})`, 
+          backgroundSize: 'cover', 
+          backgroundPosition: 'center',
+          '--widget-dark-opacity': config.theme?.opacityDark ?? 0.60,
+          '--widget-light-opacity': config.theme?.opacityLight ?? 0.82
+        } as React.CSSProperties}>
 
       {/* ===== BENTO GRID — matches reference layout ===== */}
       <div className="absolute inset-0 grid gap-[0.6vw]" style={{
@@ -89,66 +114,88 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
 
         {/* ================= LEFT COLUMN ================= */}
         {/* ROW 1-2: Analog Clocks */}
-        <div className="col-start-1 col-span-3 row-start-1 row-span-2 tv-widget flex items-center justify-around widget-animate tv-focusable" tabIndex={0}>
-          <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={85} />
-          <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={105} />
-          <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={85} />
-        </div>
+        {config.layout?.analogClocks?.visible !== false && (
+          <div className="col-start-1 col-span-3 row-start-1 row-span-2 tv-widget flex items-center justify-around widget-animate tv-focusable" tabIndex={0}>
+            <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={85} />
+            <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={105} />
+            <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={85} />
+          </div>
+        )}
 
         {/* ROW 3-7: Flight Schedule */}
-        <div className="col-start-1 col-span-3 row-start-3 row-span-5 widget-animate" style={{ animationDelay: '150ms' }}>
-          <FlightSchedule />
-        </div>
+        {config.layout?.flightSchedule?.visible !== false && (
+          <div className="col-start-1 col-span-3 row-start-3 row-span-5 widget-animate" style={{ animationDelay: '150ms' }}>
+            <FlightSchedule />
+          </div>
+        )}
 
         {/* ROW 8-12: Hotel Deals */}
-        <div className="col-start-1 col-span-3 row-start-8 row-span-5 widget-animate overflow-hidden" style={{ animationDelay: '300ms' }}>
-          <HotelDeals />
-        </div>
+        {config.layout?.hotelDeals?.visible !== false && (
+          <div className="col-start-1 col-span-3 row-start-8 row-span-5 widget-animate overflow-hidden" style={{ animationDelay: '300ms' }}>
+            <HotelDeals />
+          </div>
+        )}
 
 
         {/* ================= CENTER COLUMN ================= */}
         {/* ROW 1-2: Digital Clock */}
-        <div className="col-start-4 col-span-5 row-start-1 row-span-2 flex flex-col justify-center items-center tv-text-shadow widget-animate" style={{ animationDelay: '50ms' }}>
-          <DigitalClock timezone={store.hotelTimezone} location={store.hotelLocation} />
-        </div>
+        {config.layout?.digitalClock?.visible !== false && (
+          <div className="col-start-4 col-span-5 row-start-1 row-span-2 flex flex-col justify-center items-center tv-text-shadow widget-animate" style={{ animationDelay: '50ms' }}>
+            <DigitalClock timezone={store.hotelTimezone} location={store.hotelLocation} />
+          </div>
+        )}
 
         {/* ROW 3-7: Open Background */}
         <div className="col-start-4 col-span-5 row-start-3 row-span-5 pointer-events-none" />
 
         {/* ROW 8-12: Map & App Grid */}
-        <div className="col-start-4 col-span-2 row-start-8 row-span-5 widget-animate" style={{ animationDelay: '400ms' }}>
-          <MapWidget location={store.hotelLocation} hotelName={store.hotelName} />
-        </div>
-        <div className="col-start-6 col-span-3 row-start-8 row-span-5 widget-animate" style={{ animationDelay: '450ms' }}>
-          <AppGrid onLaunchApp={handleLaunchApp} />
-        </div>
+        {config.layout?.mapWidget?.visible !== false && (
+          <div className="col-start-4 col-span-2 row-start-8 row-span-5 widget-animate" style={{ animationDelay: '400ms' }}>
+            <MapWidget location={store.hotelLocation} hotelName={store.hotelName} />
+          </div>
+        )}
+        {config.layout?.appGrid?.visible !== false && (
+          <div className="col-start-6 col-span-3 row-start-8 row-span-5 widget-animate" style={{ animationDelay: '450ms' }}>
+            <AppGrid onLaunchApp={handleLaunchApp} />
+          </div>
+        )}
 
 
         {/* ================= RIGHT COLUMN ================= */}
         {/* ROW 1-2: Guest Card */}
-        <div className="col-start-9 col-span-3 row-start-1 row-span-2 widget-animate" style={{ animationDelay: '100ms' }}>
-          <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} />
-        </div>
+        {config.layout?.guestCard?.visible !== false && (
+          <div className="col-start-9 col-span-3 row-start-1 row-span-2 widget-animate" style={{ animationDelay: '100ms' }}>
+            <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} />
+          </div>
+        )}
 
         {/* ROW 3-4: WiFi Card */}
-        <div className="col-start-9 col-span-3 row-start-3 row-span-2 widget-animate" style={{ animationDelay: '200ms' }}>
-          <WifiCard ssid={store.wifiSsid} username={store.wifiUsername} password={store.wifiPassword} />
-        </div>
+        {config.layout?.wifiCard?.visible !== false && (
+          <div className="col-start-9 col-span-3 row-start-3 row-span-2 widget-animate" style={{ animationDelay: '200ms' }}>
+            <WifiCard ssid={store.wifiSsid} username={store.wifiUsername} password={store.wifiPassword} />
+          </div>
+        )}
 
         {/* ROW 5-7: Notification Card */}
-        <div className="col-start-9 col-span-3 row-start-5 row-span-3 widget-animate" style={{ animationDelay: '250ms' }}>
-          <NotificationCard roomId={store.roomId} />
-        </div>
+        {config.layout?.notificationCard?.visible !== false && (
+          <div className="col-start-9 col-span-3 row-start-5 row-span-3 widget-animate" style={{ animationDelay: '250ms' }}>
+            <NotificationCard roomId={store.roomId} />
+          </div>
+        )}
 
         {/* ROW 8-10: Hotel Service */}
-        <div className="col-start-9 col-span-3 row-start-8 row-span-3 widget-animate flex flex-col" style={{ animationDelay: '350ms' }}>
-          <HotelService onRequestService={handleServiceRequest} />
-        </div>
+        {config.layout?.hotelService?.visible !== false && (
+          <div className="col-start-9 col-span-3 row-start-8 row-span-3 widget-animate flex flex-col" style={{ animationDelay: '350ms' }}>
+            <HotelService onRequestService={handleServiceRequest} />
+          </div>
+        )}
 
         {/* ROW 11-12: Hotel Info */}
-        <div className="col-start-9 col-span-3 row-start-11 row-span-2 widget-animate flex flex-col" style={{ animationDelay: '375ms' }}>
-          <HotelInfo hotelName={store.hotelName} />
-        </div>
+        {config.layout?.hotelInfo?.visible !== false && (
+          <div className="col-start-9 col-span-3 row-start-11 row-span-2 widget-animate flex flex-col" style={{ animationDelay: '375ms' }}>
+            <HotelInfo hotelName={store.hotelName} />
+          </div>
+        )}
 
 
         {/* ================= SIDEBAR ================= */}
