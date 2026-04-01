@@ -124,7 +124,7 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
           <MapWidget location={store.hotelLocation} hotelName={store.hotelName} />
         </div>
 
-        <div className="col-span-7 row-span-5 col-start-5 row-start-6 widget-animate" style={{ animationDelay: '700ms' }}>
+        <div className="col-span-6 row-span-5 col-start-6 row-start-6 widget-animate" style={{ animationDelay: '700ms' }}>
           <AppGrid
             onLaunchApp={handleLaunchApp}
           />
