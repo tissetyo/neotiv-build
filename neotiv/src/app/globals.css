@@ -5,9 +5,8 @@
     --color-teal: #14b8a6;
     --color-teal-light: #5eead4;
     --color-teal-dark: #0f766e;
-    --color-glass-bg: rgba(15, 23, 42, 0.70);
+    --color-glass-bg: rgba(15, 23, 42, 0.85);
     --color-glass-border: rgba(255, 255, 255, 0.08);
-    --color-glass-light: rgba(255, 255, 255, 0.06);
     --color-sidebar-bg: #0f172a;
     --color-sidebar-hover: #1e293b;
     --color-content-bg: #f8fafc;
@@ -27,16 +26,32 @@
 }
 
 /* ═══════════════════════════════════════════
-   DARK FROSTED GLASS — opaque navy
+   DARK CARD — Clocks, Flight, Deals, Map
+   Near-black frosted glass
    ═══════════════════════════════════════════ */
 .tv-widget {
-  background: rgba(15, 23, 42, 0.72);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-radius: var(--widget-radius);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   padding: var(--widget-pad);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* ═══════════════════════════════════════════
+   WHITE GLASS CARD — Guest, WiFi, Notification,
+   Hotel Service, Hotel Info
+   Light frosted glass with white tint
+   ═══════════════════════════════════════════ */
+.tv-widget-light {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border-radius: var(--widget-radius);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: var(--widget-pad);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .tv-text-shadow {
@@ -57,7 +72,7 @@
 }
 
 /* ═══════════════════════════════════════════
-   APP CARD — same dark glass, brand glow on focus
+   APP CARD — dark base + brand gradient corner
    ═══════════════════════════════════════════ */
 @keyframes border-glow {
   0%, 100% { border-color: rgba(255, 255, 255, 0.06); }
@@ -66,15 +81,29 @@
 
 .tv-app-card {
   --app-color: rgba(255, 255, 255, 0.15);
-  background: rgba(15, 23, 42, 0.72);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  position: relative;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.06);
   transition: all 0.3s ease;
 }
 
-.tv-app-card:hover {
-  background: rgba(15, 23, 42, 0.80);
+/* Brand gradient glow from bottom-right corner */
+.tv-app-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at bottom right, var(--app-color) 0%, transparent 65%);
+  opacity: 0.15;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.tv-app-card:hover::after {
+  opacity: 0.25;
 }
 
 .tv-app-card.tv-focusable:focus,
@@ -84,6 +113,10 @@
   z-index: 10;
   border-color: var(--app-color);
   animation: border-glow 2s ease infinite;
+}
+
+.tv-app-card.tv-focusable:focus::after {
+  opacity: 0.3;
 }
 
 /* ═══════════════════════════════════════════

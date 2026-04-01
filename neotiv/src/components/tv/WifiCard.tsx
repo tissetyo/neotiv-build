@@ -12,7 +12,7 @@ export default function WifiCard({ ssid, username, password }: Props) {
   const wifiString = `WIFI:S:${ssid};T:WPA;P:${password};;`;
 
   return (
-    <div className="tv-widget h-full flex gap-[1vw] items-center tv-focusable" tabIndex={0}>
+    <div className="tv-widget-light h-full flex gap-[1vw] items-center tv-focusable" tabIndex={0}>
       <div className="bg-white p-[0.5vw] rounded-xl flex-shrink-0 shadow-lg">
         <QRCode value={wifiString} size={90} level="H" />
       </div>

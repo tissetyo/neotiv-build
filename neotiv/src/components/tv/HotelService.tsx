@@ -20,23 +20,23 @@ export default function HotelService({ onRequestService }: Props) {
   const displayServices = services.length > 0 ? services : defaultServices;
 
   return (
-    <div className="tv-widget flex-1 flex flex-col">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[16px]">🛎</span>
-        <span className="text-white text-[14px] font-semibold">Hotel Service</span>
+    <div className="tv-widget-light flex-1 flex flex-col">
+      <div className="flex items-center gap-[0.4vw] mb-[0.5vh]">
+        <span className="text-[0.9vw]">🛎</span>
+        <span className="text-white text-[0.75vw] font-semibold">Hotel Service</span>
       </div>
-      <div className="grid grid-cols-3 gap-1.5 flex-1 content-start">
+      <div className="grid grid-cols-3 gap-[0.4vw] flex-1 content-start">
         {displayServices.slice(0, 6).map((service) => (
           <button
             key={service.id}
             onClick={() => onRequestService?.({ id: service.id, name: service.name, icon: service.icon })}
-            className="flex flex-col items-center justify-center rounded-lg p-1.5 transition-all hover:bg-white/10 tv-focusable"
+            className="flex flex-col items-center justify-center rounded-lg p-[0.3vw] transition-all hover:bg-white/10 tv-focusable"
             style={{ background: 'rgba(255,255,255,0.05)' }}
             tabIndex={0}
             title={service.name}
           >
-            <span className="text-[18px]">{service.icon || '🛎'}</span>
-            <span className="text-white/60 text-[9px] mt-0.5 leading-tight text-center truncate w-full">
+            <span className="text-[1.2vw]">{service.icon || '🛎'}</span>
+            <span className="text-white/60 text-[0.5vw] mt-[0.2vh] leading-tight text-center truncate w-full">
               {service.name}
             </span>
           </button>
