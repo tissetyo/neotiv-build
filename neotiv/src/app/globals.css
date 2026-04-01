@@ -94,10 +94,7 @@
 /* ═══════════════════════════════════════════
    APP CARD — Dark Base + Brand glow + Gradient Stroke
    ═══════════════════════════════════════════ */
-@keyframes border-glow-focus {
-  0%, 100% { outline-color: rgba(255, 255, 255, 0.8); }
-  50% { outline-color: var(--app-color); }
-}
+/* Removed border-glow-focus animation to prevent overwriting of widgetMount animation */
 
 .tv-app-card {
   --app-color: rgba(255, 255, 255, 0.15);
@@ -131,7 +128,7 @@
   outline-offset: 4px;
   transform: scale(1.04);
   z-index: 10;
-  animation: border-glow-focus 3s ease infinite;
+  /* Removed border-glow-focus animation as it replaced widgetMount and caused opacity to revert to 0 */
 }
 
 .tv-app-card.tv-focusable:focus::after {
