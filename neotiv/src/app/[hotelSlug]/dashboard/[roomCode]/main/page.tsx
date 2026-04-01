@@ -14,7 +14,6 @@ import HotelDeals from '@/components/tv/HotelDeals';
 import HotelService from '@/components/tv/HotelService';
 import HotelInfo from '@/components/tv/HotelInfo';
 import MapWidget from '@/components/tv/MapWidget';
-import AppGrid from '@/components/tv/AppGrid';
 import UtilitySidebar from '@/components/tv/UtilitySidebar';
 import MarqueeBar from '@/components/tv/MarqueeBar';
 import ChatModal from '@/components/tv/ChatModal';
@@ -100,7 +99,18 @@ export default function MainDashboardPage({ params }: { params: any }) {
   }, [hotelSlug, roomCode, hydrate]);
 
   const handleAction = useCallback((action: string) => { setActiveModal(action); }, []);
-  const handleLaunchApp = useCallback((app: AppConfig) => { setLaunchApp(app); }, []);
+  const handleLaunchApp = useCallback((app: any) => {
+    if (app.name === 'TV') {
+      window.dispatchEvent(new CustomEvent('neotiv:switch-to-tv', { bubbles: true }));
+      return;
+    }
+    setLaunchApp({ 
+      name: app.name, 
+      url: app.url, 
+      embeddable: app.embeddable || false, 
+      icon: typeof app.icon === 'string' ? app.icon : '' 
+    });
+  }, []);
   const handleServiceRequest = useCallback((service: { id: string; name: string; icon: string | null }) => { setRequestService(service); }, []);
 
   if (!mounted) return <div className="w-screen h-screen bg-slate-900" />;
@@ -116,7 +126,6 @@ export default function MainDashboardPage({ params }: { params: any }) {
       hotelDeals: { colStart: 1, colSpan: 3, rowStart: 8, rowSpan: 5, visible: true },
       digitalClock: { colStart: 4, colSpan: 5, rowStart: 1, rowSpan: 2, visible: true },
       mapWidget: { colStart: 4, colSpan: 2, rowStart: 8, rowSpan: 5, visible: true },
-      appGrid: { colStart: 6, colSpan: 3, rowStart: 8, rowSpan: 5, visible: true },
       guestCard: { colStart: 9, colSpan: 3, rowStart: 1, rowSpan: 2, visible: true },
       wifiCard: { colStart: 9, colSpan: 3, rowStart: 3, rowSpan: 2, visible: true },
       notificationCard: { colStart: 9, colSpan: 3, rowStart: 5, rowSpan: 3, visible: true },
@@ -137,11 +146,13 @@ export default function MainDashboardPage({ params }: { params: any }) {
       const colSpan = typeof dbW?.colSpan === 'number' && dbW.colSpan > 0 ? dbW.colSpan : (defW?.colSpan || 1);
       const rowStart = typeof dbW?.rowStart === 'number' && dbW.rowStart > 0 ? dbW.rowStart : (defW?.rowStart || 1);
       const rowSpan = typeof dbW?.rowSpan === 'number' && dbW.rowSpan > 0 ? dbW.rowSpan : (defW?.rowSpan || 1);
+      const bgColor = dbW?.bgColor;
 
       return {
         gridColumn: `${colStart} / span ${colSpan}`,
         gridRow: `${rowStart} / span ${rowSpan}`,
         animationDelay: baseDelay,
+        ...(bgColor ? { backgroundColor: `${bgColor}99` } : {}) // Append 60% opacity hex
       };
     } catch (err) {
       console.error(`Layout Error for ${key}:`, err);
@@ -203,17 +214,41 @@ export default function MainDashboardPage({ params }: { params: any }) {
         {/* ROW 3-7: Open Background */}
         <div className="pointer-events-none" style={{ gridColumn: '4 / span 5', gridRow: '3 / span 5' }} />
 
-        {/* ROW 8-12: Map & App Grid */}
+        {/* ROW 8-12: Map Widget */}
         {config.layout?.mapWidget?.visible !== false && (
           <div className="widget-animate" style={getWidgetStyle('mapWidget', '400ms')}>
             <MapWidget location={store.hotelLocation} hotelName={store.hotelName} />
           </div>
         )}
-        {config.layout?.appGrid?.visible !== false && (
-          <div className="widget-animate" style={getWidgetStyle('appGrid', '450ms')}>
-            <AppGrid onLaunchApp={handleLaunchApp} />
-          </div>
-        )}
+
+        {/* INDEPENDENT APP CARDS */}
+        {config.apps?.map((app: any, i: number) => {
+          const layoutKey = `app-${app.id}`;
+          if (config.layout?.[layoutKey]?.visible === false) return null;
+          
+          return (
+            <button 
+              key={app.id || i}
+              onClick={() => handleLaunchApp(app)}
+              className="tv-app-card tv-focusable rounded-[var(--widget-radius)] flex flex-col items-center justify-center text-white group relative overflow-hidden widget-animate"
+              style={{ 
+                ...getWidgetStyle(layoutKey, `${450 + i * 50}ms`),
+                '--app-color': app.brandColor || '#334155',
+              } as unknown as React.CSSProperties}
+              tabIndex={0}>
+                <div className="w-[1.8vw] h-[1.8vw] group-hover:scale-110 transition-transform duration-300 relative z-10 flex items-center justify-center"
+                     style={{ color: app.brandColor || '#e2e8f0' }}>
+                   {app.icon && typeof app.icon === 'string' && (app.icon.startsWith('/') || app.icon.startsWith('http')) ? (
+                      <img src={app.icon} alt={app.name} className="w-full h-full object-contain" />
+                   ) : null}
+                </div>
+                <span className="text-[0.7vw] font-semibold mt-[0.4vh] tracking-wide relative z-10 truncate px-2 w-full text-center">{app.name}</span>
+                {app.subtitle && (
+                  <span className="text-[0.5vw] text-white/40 mt-[0.1vh] relative z-10">{app.subtitle}</span>
+                )}
+            </button>
+          );
+        })}
 
 
         {/* ================= RIGHT COLUMN ================= */}

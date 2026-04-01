@@ -31,7 +31,6 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
       hotelDeals: { visible: true },
       digitalClock: { visible: true },
       mapWidget: { visible: true },
-      appGrid: { visible: true },
       guestCard: { visible: true },
       wifiCard: { visible: true },
       notificationCard: { visible: true },
@@ -43,11 +42,22 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
   useEffect(() => {
     const fetchConfig = async () => {
       const { data } = await supabase.from('hotels').select('tv_layout_config').eq('id', hotelId).single();
+      let loadedConfig: any = { ...defaultConfig };
       if (data && data.tv_layout_config && Object.keys(data.tv_layout_config).length > 0) {
-        setConfig({ ...defaultConfig, ...data.tv_layout_config });
-      } else {
-        setConfig(defaultConfig);
+        loadedConfig = { ...loadedConfig, ...data.tv_layout_config };
       }
+      
+      // Ensure all apps have a layout entry
+      loadedConfig.apps?.forEach((app: any) => {
+        const key = `app-${app.id}`;
+        if (!loadedConfig.layout[key]) {
+          loadedConfig.layout[key] = { colStart: 6, colSpan: 2, rowStart: 8, rowSpan: 2, visible: true, bgColor: '#334155' };
+        }
+      });
+      // Cleanup legacy
+      if (loadedConfig.layout.appGrid) delete loadedConfig.layout.appGrid;
+
+      setConfig(loadedConfig);
       setLoading(false);
     };
     fetchConfig();
@@ -233,10 +243,10 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
                     key={key}
                     onPointerDown={(e) => startDrag(e, key)}
                     className="bg-teal-500/80 border border-teal-300 rounded shadow-md relative group select-none touch-none cursor-grab active:cursor-grabbing flex flex-col items-center justify-center overflow-hidden hover:bg-teal-400/90 transition-colors"
-                    style={{ gridColumn: `${w.colStart || 1} / span ${w.colSpan || 1}`, gridRow: `${w.rowStart || 1} / span ${w.rowSpan || 1}` }}
+                    style={{ gridColumn: `${w.colStart || 1} / span ${w.colSpan || 1}`, gridRow: `${w.rowStart || 1} / span ${w.rowSpan || 1}`, backgroundColor: w.bgColor || '' }}
                   >
-                    <span className="text-xs font-bold text-teal-950 text-center px-1 leading-tight pointer-events-none">
-                      {key.replace(/([A-Z])/g, ' $1').trim().replace('Card', '')}
+                    <span className="text-xs font-bold text-white tv-text-shadow text-center px-1 leading-tight pointer-events-none">
+                      {key.startsWith('app-') ? (config.apps.find((a: any) => a.id === key.replace('app-', ''))?.name || key) : key.replace(/([A-Z])/g, ' $1').trim().replace('Card', '')}
                     </span>
                     <span className="text-[10px] text-teal-900/60 pointer-events-none">{w.colSpan}x{w.rowSpan}</span>
 
@@ -254,21 +264,37 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-800 mb-4">Widget Visibility</h2>
+            <h2 className="text-lg font-bold text-slate-800 mb-4">Widget Visibility & Color</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {Object.keys(config.layout).map((key) => (
-                <label key={key} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={config.layout[key].visible !== false}
-                    onChange={(e) => setConfig({
-                      ...config,
-                      layout: { ...config.layout, [key]: { ...config.layout[key], visible: e.target.checked } }
-                    })}
-                    className="w-4 h-4 text-teal-500 rounded focus:ring-teal-500 outline-none"
-                  />
-                  <span className="font-medium text-sm text-slate-700 capitalize truncate">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                </label>
+                <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
+                  <label className="flex items-center gap-3 cursor-pointer overflow-hidden">
+                    <input
+                      type="checkbox"
+                      checked={config.layout[key].visible !== false}
+                      onChange={(e) => setConfig({
+                        ...config,
+                        layout: { ...config.layout, [key]: { ...config.layout[key], visible: e.target.checked } }
+                      })}
+                      className="w-4 h-4 text-teal-500 rounded focus:ring-teal-500 outline-none shrink-0"
+                    />
+                    <span className="font-medium text-sm text-slate-700 capitalize truncate">
+                      {key.startsWith('app-') ? (config.apps.find((a: any) => a.id === key.replace('app-', ''))?.name || key) : key.replace(/([A-Z])/g, ' $1').trim().replace('Card', '')}
+                    </span>
+                  </label>
+                  <label className="flex items-center justify-center shrink-0 cursor-pointer pl-2 border-l border-slate-200">
+                    <input
+                      title={`Theme Color for ${key}`}
+                      type="color"
+                      value={config.layout[key].bgColor || '#334155'}
+                      onChange={(e) => setConfig({
+                        ...config,
+                        layout: { ...config.layout, [key]: { ...config.layout[key], bgColor: e.target.value } }
+                      })}
+                      className="w-6 h-6 p-0 border-0 rounded cursor-pointer overflow-hidden opacity-90 hover:opacity-100 transition-opacity bg-transparent"
+                    />
+                  </label>
+                </div>
               ))}
             </div>
           </div>
