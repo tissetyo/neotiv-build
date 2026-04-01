@@ -17,6 +17,7 @@ export default function DigitalClock({ timezone, location }: Props) {
 
   const formatTime = () => {
     try {
+      if (!timezone || typeof timezone !== 'string') throw new Error('Invalid timezone');
       return time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timezone }).replace(':', '.');
     } catch {
       return time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).replace(':', '.');
@@ -25,6 +26,7 @@ export default function DigitalClock({ timezone, location }: Props) {
 
   const formatAmPm = () => {
     try {
+      if (!timezone || typeof timezone !== 'string') throw new Error('Invalid timezone');
       return time.toLocaleTimeString('en-US', { hour12: true, timeZone: timezone }).split(' ')[1];
     } catch {
       return time.toLocaleTimeString('en-US', { hour12: true }).split(' ')[1];
@@ -33,6 +35,7 @@ export default function DigitalClock({ timezone, location }: Props) {
 
   const formatDate = () => {
     try {
+      if (!timezone || typeof timezone !== 'string') throw new Error('Invalid timezone');
       return time.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone });
     } catch {
       return time.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });

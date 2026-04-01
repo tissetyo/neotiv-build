@@ -21,10 +21,14 @@ export default function AnalogClock({ timezone, label, size = 120 }: Props) {
   let seconds = 0;
 
   try {
-    const tzTime = new Date(time.toLocaleString('en-US', { timeZone: timezone }));
-    hours = tzTime.getHours() % 12;
-    minutes = tzTime.getMinutes();
-    seconds = tzTime.getSeconds();
+    if (timezone && typeof timezone === 'string') {
+      const tzTime = new Date(time.toLocaleString('en-US', { timeZone: timezone }));
+      hours = tzTime.getHours() % 12;
+      minutes = tzTime.getMinutes();
+      seconds = tzTime.getSeconds();
+    } else {
+      throw new Error('Invalid timezone');
+    }
   } catch (e) {
     // Fallback to local system time if timezone is invalid
     hours = time.getHours() % 12;

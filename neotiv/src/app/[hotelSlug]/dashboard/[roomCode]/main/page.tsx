@@ -117,16 +117,21 @@ export default function MainDashboardPage({ params }: { params: any }) {
       hotelInfo: { colStart: 9, colSpan: 3, rowStart: 11, rowSpan: 2, visible: true }
     }
   };
-  const config = (store.tvLayoutConfig || defaultConfig) as any;
-
+  const config = (store.tvLayoutConfig && typeof store.tvLayoutConfig === 'object' ? store.tvLayoutConfig : defaultConfig) as any;
+  
+  // Safe widget style getter
   const getWidgetStyle = (key: string, baseDelay: string) => {
-    const w = config.layout?.[key] || (defaultConfig.layout as any)[key];
-    if (!w) return { animationDelay: baseDelay };
-    return {
-      gridColumn: w.colSpan ? `${w.colStart || 1} / span ${w.colSpan}` : undefined,
-      gridRow: w.rowSpan ? `${w.rowStart || 1} / span ${w.rowSpan}` : undefined,
-      animationDelay: baseDelay,
-    };
+    try {
+      const w = config.layout?.[key] || (defaultConfig.layout as any)[key];
+      if (!w) return { animationDelay: baseDelay };
+      return {
+        gridColumn: w.colSpan ? `${w.colStart || 1} / span ${w.colSpan}` : undefined,
+        gridRow: w.rowSpan ? `${w.rowStart || 1} / span ${w.rowSpan}` : undefined,
+        animationDelay: baseDelay,
+      };
+    } catch {
+      return { animationDelay: baseDelay };
+    }
   };
 
   return (
@@ -149,7 +154,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
 
         {/* ================= LEFT COLUMN ================= */}
         {/* ROW 1-2: Analog Clocks */}
-        {config.layout?.analogClocks?.visible !== false && (
+        {config.layout?.analogClocks?.visible !== false && store.clockTimezones?.length >= 3 && (
           <div className="tv-widget flex items-center justify-around widget-animate tv-focusable" tabIndex={0} style={getWidgetStyle('analogClocks', '0ms')}>
             <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={85} />
             <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={105} />
