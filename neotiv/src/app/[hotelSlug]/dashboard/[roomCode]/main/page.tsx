@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, use } from 'react';
+import useSWR from 'swr';
 import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
 import { useRoomStore } from '@/stores/roomStore';
 import AnalogClock from '@/components/tv/AnalogClock';
@@ -39,6 +40,18 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
   }, []);
 
   useDpadNavigation({ enabled: mounted && !activeModal && !launchApp && !requestService, onEscape: handleEscape });
+
+  const { data: liveConfig } = useSWR(
+    mounted ? `/api/hotel/${hotelSlug}/tv-config` : null,
+    (url: string) => fetch(url).then((res) => res.json()),
+    { refreshInterval: 60000 } // Check every minute
+  );
+
+  useEffect(() => {
+    if (liveConfig && liveConfig.tvLayoutConfig) {
+      store.hydrate({ tvLayoutConfig: liveConfig.tvLayoutConfig });
+    }
+  }, [liveConfig, store]);
 
   useEffect(() => {
     const stored = localStorage.getItem(`neotiv_room_${hotelSlug}_${roomCode}`);
@@ -79,20 +92,30 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
     theme: { opacityLight: 0.82, opacityDark: 0.60 },
     apps: [],
     layout: {
-      analogClocks: { visible: true },
-      flightSchedule: { visible: true },
-      hotelDeals: { visible: true },
-      digitalClock: { visible: true },
-      mapWidget: { visible: true },
-      appGrid: { visible: true },
-      guestCard: { visible: true },
-      wifiCard: { visible: true },
-      notificationCard: { visible: true },
-      hotelService: { visible: true },
-      hotelInfo: { visible: true }
+      analogClocks: { colStart: 1, colSpan: 3, rowStart: 1, rowSpan: 2, visible: true },
+      flightSchedule: { colStart: 1, colSpan: 3, rowStart: 3, rowSpan: 5, visible: true },
+      hotelDeals: { colStart: 1, colSpan: 3, rowStart: 8, rowSpan: 5, visible: true },
+      digitalClock: { colStart: 4, colSpan: 5, rowStart: 1, rowSpan: 2, visible: true },
+      mapWidget: { colStart: 4, colSpan: 2, rowStart: 8, rowSpan: 5, visible: true },
+      appGrid: { colStart: 6, colSpan: 3, rowStart: 8, rowSpan: 5, visible: true },
+      guestCard: { colStart: 9, colSpan: 3, rowStart: 1, rowSpan: 2, visible: true },
+      wifiCard: { colStart: 9, colSpan: 3, rowStart: 3, rowSpan: 2, visible: true },
+      notificationCard: { colStart: 9, colSpan: 3, rowStart: 5, rowSpan: 3, visible: true },
+      hotelService: { colStart: 9, colSpan: 3, rowStart: 8, rowSpan: 3, visible: true },
+      hotelInfo: { colStart: 9, colSpan: 3, rowStart: 11, rowSpan: 2, visible: true }
     }
   };
   const config = (store.tvLayoutConfig || defaultConfig) as any;
+
+  const getWidgetStyle = (key: string, baseDelay: string) => {
+    const w = config.layout?.[key] || (defaultConfig.layout as any)[key];
+    if (!w) return { animationDelay: baseDelay };
+    return {
+      gridColumn: w.colSpan ? `${w.colStart || 1} / span ${w.colSpan}` : undefined,
+      gridRow: w.rowSpan ? `${w.rowStart || 1} / span ${w.rowSpan}` : undefined,
+      animationDelay: baseDelay,
+    };
+  };
 
   return (
       <div className="w-screen h-screen relative overflow-hidden bg-slate-900"
@@ -115,7 +138,7 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
         {/* ================= LEFT COLUMN ================= */}
         {/* ROW 1-2: Analog Clocks */}
         {config.layout?.analogClocks?.visible !== false && (
-          <div className="col-start-1 col-span-3 row-start-1 row-span-2 tv-widget flex items-center justify-around widget-animate tv-focusable" tabIndex={0}>
+          <div className="tv-widget flex items-center justify-around widget-animate tv-focusable" tabIndex={0} style={getWidgetStyle('analogClocks', '0ms')}>
             <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={85} />
             <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={105} />
             <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={85} />
@@ -124,14 +147,14 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
 
         {/* ROW 3-7: Flight Schedule */}
         {config.layout?.flightSchedule?.visible !== false && (
-          <div className="col-start-1 col-span-3 row-start-3 row-span-5 widget-animate" style={{ animationDelay: '150ms' }}>
+          <div className="widget-animate" style={getWidgetStyle('flightSchedule', '150ms')}>
             <FlightSchedule />
           </div>
         )}
 
         {/* ROW 8-12: Hotel Deals */}
         {config.layout?.hotelDeals?.visible !== false && (
-          <div className="col-start-1 col-span-3 row-start-8 row-span-5 widget-animate overflow-hidden" style={{ animationDelay: '300ms' }}>
+          <div className="widget-animate overflow-hidden" style={getWidgetStyle('hotelDeals', '300ms')}>
             <HotelDeals />
           </div>
         )}
@@ -140,22 +163,22 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
         {/* ================= CENTER COLUMN ================= */}
         {/* ROW 1-2: Digital Clock */}
         {config.layout?.digitalClock?.visible !== false && (
-          <div className="col-start-4 col-span-5 row-start-1 row-span-2 flex flex-col justify-center items-center tv-text-shadow widget-animate" style={{ animationDelay: '50ms' }}>
+          <div className="flex flex-col justify-center items-center tv-text-shadow widget-animate" style={getWidgetStyle('digitalClock', '50ms')}>
             <DigitalClock timezone={store.hotelTimezone} location={store.hotelLocation} />
           </div>
         )}
 
         {/* ROW 3-7: Open Background */}
-        <div className="col-start-4 col-span-5 row-start-3 row-span-5 pointer-events-none" />
+        <div className="pointer-events-none" style={{ gridColumn: '4 / span 5', gridRow: '3 / span 5' }} />
 
         {/* ROW 8-12: Map & App Grid */}
         {config.layout?.mapWidget?.visible !== false && (
-          <div className="col-start-4 col-span-2 row-start-8 row-span-5 widget-animate" style={{ animationDelay: '400ms' }}>
+          <div className="widget-animate" style={getWidgetStyle('mapWidget', '400ms')}>
             <MapWidget location={store.hotelLocation} hotelName={store.hotelName} />
           </div>
         )}
         {config.layout?.appGrid?.visible !== false && (
-          <div className="col-start-6 col-span-3 row-start-8 row-span-5 widget-animate" style={{ animationDelay: '450ms' }}>
+          <div className="widget-animate" style={getWidgetStyle('appGrid', '450ms')}>
             <AppGrid onLaunchApp={handleLaunchApp} />
           </div>
         )}
@@ -164,35 +187,35 @@ export default function MainDashboardPage({ params }: { params: Promise<{ hotelS
         {/* ================= RIGHT COLUMN ================= */}
         {/* ROW 1-2: Guest Card */}
         {config.layout?.guestCard?.visible !== false && (
-          <div className="col-start-9 col-span-3 row-start-1 row-span-2 widget-animate" style={{ animationDelay: '100ms' }}>
+          <div className="widget-animate" style={getWidgetStyle('guestCard', '100ms')}>
             <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} />
           </div>
         )}
 
         {/* ROW 3-4: WiFi Card */}
         {config.layout?.wifiCard?.visible !== false && (
-          <div className="col-start-9 col-span-3 row-start-3 row-span-2 widget-animate" style={{ animationDelay: '200ms' }}>
+          <div className="widget-animate" style={getWidgetStyle('wifiCard', '200ms')}>
             <WifiCard ssid={store.wifiSsid} username={store.wifiUsername} password={store.wifiPassword} />
           </div>
         )}
 
         {/* ROW 5-7: Notification Card */}
         {config.layout?.notificationCard?.visible !== false && (
-          <div className="col-start-9 col-span-3 row-start-5 row-span-3 widget-animate" style={{ animationDelay: '250ms' }}>
+          <div className="widget-animate" style={getWidgetStyle('notificationCard', '250ms')}>
             <NotificationCard roomId={store.roomId} />
           </div>
         )}
 
         {/* ROW 8-10: Hotel Service */}
         {config.layout?.hotelService?.visible !== false && (
-          <div className="col-start-9 col-span-3 row-start-8 row-span-3 widget-animate flex flex-col" style={{ animationDelay: '350ms' }}>
+          <div className="widget-animate flex flex-col" style={getWidgetStyle('hotelService', '350ms')}>
             <HotelService onRequestService={handleServiceRequest} />
           </div>
         )}
 
         {/* ROW 11-12: Hotel Info */}
         {config.layout?.hotelInfo?.visible !== false && (
-          <div className="col-start-9 col-span-3 row-start-11 row-span-2 widget-animate flex flex-col" style={{ animationDelay: '375ms' }}>
+          <div className="widget-animate flex flex-col" style={getWidgetStyle('hotelInfo', '375ms')}>
             <HotelInfo hotelName={store.hotelName} />
           </div>
         )}
