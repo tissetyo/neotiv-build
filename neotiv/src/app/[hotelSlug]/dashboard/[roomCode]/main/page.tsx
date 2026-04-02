@@ -418,6 +418,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
       <ServiceRequestModal
         isOpen={!!requestService}
         onClose={() => setRequestService(null)}
+        onOrderComplete={() => setActiveModal('chat')}
         service={requestService}
       />
       <ConnectionStatus />
