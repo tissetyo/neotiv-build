@@ -298,13 +298,13 @@ export default function MainDashboardPage({ params }: { params: any }) {
                 '--app-color': app.brandColor || '#334155',
               } as unknown as React.CSSProperties}
               tabIndex={0}>
-                <div className="w-[1.8vw] h-[1.8vw] group-hover:scale-110 transition-transform duration-300 relative z-10 flex items-center justify-center"
+                <div className="w-[3.5vw] h-[3.5vw] mb-[0.8vh] group-hover:scale-110 transition-transform duration-300 relative z-10 flex items-center justify-center"
                      style={{ color: app.brandColor || '#e2e8f0' }}>
                    {app.icon && typeof app.icon === 'string' && (app.icon.startsWith('/') || app.icon.startsWith('http')) ? (
                       <img src={app.icon} alt={app.name} className="w-full h-full object-contain" />
                    ) : null}
                 </div>
-                <span className="text-[0.7vw] font-semibold mt-[0.4vh] tracking-wide relative z-10 truncate px-2 w-full text-center" style={{ color: 'var(--tv-text-color)' }}>{app.name}</span>
+                <span className="text-[1vw] font-bold tracking-wide relative z-10 truncate px-2 w-full text-center" style={{ color: 'var(--tv-text-color)' }}>{app.name}</span>
                 {app.subtitle && (
                   <span className="text-[0.5vw] opacity-40 mt-[0.1vh] relative z-10" style={{ color: 'var(--tv-text-color)' }}>{app.subtitle}</span>
                 )}
