@@ -136,6 +136,23 @@ create table if not exists service_requests (
   updated_at timestamptz default now()
 );
 
+create table if not exists service_options (
+  id uuid primary key default uuid_generate_v4(),
+  service_id uuid references services(id) on delete cascade,
+  name text not null,
+  price numeric default 0,
+  created_at timestamptz default now()
+);
+
+create table if not exists mobile_sessions (
+  id uuid primary key default uuid_generate_v4(),
+  hotel_id uuid references hotels(id) on delete cascade,
+  room_id uuid references rooms(id) on delete cascade,
+  expires_at timestamptz not null,
+  created_at timestamptz default now()
+);
+
+
 create table if not exists announcements (
   id uuid primary key default uuid_generate_v4(),
   hotel_id uuid references hotels(id) on delete cascade,
@@ -176,6 +193,8 @@ alter table alarms enable row level security;
 alter table promos enable row level security;
 alter table services enable row level security;
 alter table service_requests enable row level security;
+alter table service_options enable row level security;
+alter table mobile_sessions enable row level security;
 alter table announcements enable row level security;
 alter table platform_settings enable row level security;
 alter table activity_log enable row level security;
@@ -208,6 +227,10 @@ create policy "staff alarms" on alarms for all using (hotel_id = get_my_hotel_id
 create policy "staff promos" on promos for all using (hotel_id = get_my_hotel_id() or get_my_role() = 'superadmin');
 create policy "staff services" on services for all using (hotel_id = get_my_hotel_id() or get_my_role() = 'superadmin');
 create policy "staff service_requests" on service_requests for all using (hotel_id = get_my_hotel_id() or get_my_role() = 'superadmin');
+create policy "staff service_options" on service_options for all using (
+  service_id in (select id from services where hotel_id = get_my_hotel_id()) or get_my_role() = 'superadmin'
+);
+create policy "staff mobile_sessions" on mobile_sessions for all using (hotel_id = get_my_hotel_id() or get_my_role() = 'superadmin');
 create policy "staff announcements" on announcements for all using (hotel_id = get_my_hotel_id() or get_my_role() = 'superadmin');
 create policy "staff room_types" on room_types for all using (hotel_id = get_my_hotel_id() or get_my_role() = 'superadmin');
 create policy "admin platform_settings" on platform_settings for all using (get_my_role() = 'superadmin');

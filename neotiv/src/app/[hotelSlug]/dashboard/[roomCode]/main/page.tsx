@@ -20,8 +20,9 @@ import AlarmModal from '@/components/tv/AlarmModal';
 import AppLauncher from '@/components/tv/AppLauncher';
 import ServiceRequestModal from '@/components/tv/ServiceRequestModal';
 import ConnectionStatus from '@/components/tv/ConnectionStatus';
+import NotificationsModal from '@/components/tv/NotificationsModal';
 import type { AppConfig } from '@/components/tv/AppLauncher';
-import { AlarmClock, MessageCircle } from 'lucide-react';
+import { AlarmClock, MessageCircle, Bell } from 'lucide-react';
 
 export default function MainDashboardPage({ params }: { params: any }) {
   // Safe unwrap for dynamic params (handles both Promise and direct object for Next.js 15/16 consistency)
@@ -168,7 +169,8 @@ export default function MainDashboardPage({ params }: { params: any }) {
       hotelService: { colStart: 9, colSpan: 3, rowStart: 8, rowSpan: 3, visible: true },
       hotelInfo: { colStart: 9, colSpan: 3, rowStart: 11, rowSpan: 2, visible: true },
       alarmWidget: { colStart: 12, colSpan: 1, rowStart: 1, rowSpan: 1, visible: true, bgColor: '#f59e0b' },
-      chatWidget: { colStart: 12, colSpan: 1, rowStart: 2, rowSpan: 1, visible: true, bgColor: '#14b8a6' }
+      chatWidget: { colStart: 12, colSpan: 1, rowStart: 2, rowSpan: 1, visible: true, bgColor: '#14b8a6' },
+      notifWidget: { colStart: 12, colSpan: 1, rowStart: 3, rowSpan: 1, visible: true, bgColor: '#8b5cf6' }
     }
   };
   const config = (store.tvLayoutConfig && typeof store.tvLayoutConfig === 'object' ? store.tvLayoutConfig : defaultConfig) as any;
@@ -319,7 +321,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
         )}
 
         {/* ROW 5-7: Notification Card */}
-        {config.layout?.notificationCard?.visible !== false && (
+        {config.layout?.notificationCard?.visible !== false && store.latestNotification && !store.latestNotification.isDismissed && (
           <div className="widget-animate" style={getWidgetStyle('notificationCard', '250ms')}>
             <NotificationCard />
           </div>
@@ -369,6 +371,18 @@ export default function MainDashboardPage({ params }: { params: any }) {
             )}
           </button>
         )}
+
+        {config.layout?.notifWidget?.visible !== false && (
+          <button 
+            onClick={() => handleAction('notif')}
+            className="tv-app-card tv-focusable rounded-[var(--widget-radius)] flex flex-col items-center justify-center text-white group relative overflow-hidden widget-animate"
+            style={getWidgetStyle('notifWidget', '600ms') as React.CSSProperties}
+            tabIndex={0}
+          >
+            <Bell size={20} className="group-hover:scale-110 transition-transform text-white/90" strokeWidth={2.5} />
+            <span className="text-[0.6vw] font-semibold mt-1">Notifs</span>
+          </button>
+        )}
       </div>
 
       {/* ===== MARQUEE BAR ===== */}
@@ -380,6 +394,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
       {/* Modals */}
       <ChatModal isOpen={activeModal === 'chat'} onClose={() => setActiveModal(null)} />
       <AlarmModal isOpen={activeModal === 'alarm'} onClose={() => setActiveModal(null)} />
+      <NotificationsModal isOpen={activeModal === 'notif'} onClose={() => setActiveModal(null)} />
       <AppLauncher app={launchApp} isOpen={!!launchApp} onClose={() => setLaunchApp(null)} />
       <ServiceRequestModal
         isOpen={!!requestService}

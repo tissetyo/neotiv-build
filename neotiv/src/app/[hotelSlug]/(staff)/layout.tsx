@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { use, useState, useEffect } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
-import { Building2, MessageSquare, Bell, Clock, ConciergeBell, Ticket, Settings, Bed, Tags, Users, Wrench, BarChart3, LogOut } from 'lucide-react';
+import { Building2, MessageSquare, Bell, Clock, ConciergeBell, Ticket, Settings, Bed, Tags, Users, Wrench, BarChart3, LogOut, Home } from 'lucide-react';
 
 const guestOpsNav = [
+  { href: 'home', label: 'Home', icon: Home, color: 'text-indigo-400' },
   { href: 'rooms', label: 'Rooms', icon: Building2, color: 'text-blue-400' },
   { href: 'notifications', label: 'Notifications', icon: Bell, color: 'text-amber-400' },
   { href: 'chat', label: 'Chat', icon: MessageSquare, color: 'text-teal-400' },

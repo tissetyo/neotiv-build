@@ -56,6 +56,13 @@ export default function NotificationsPage({ params }: { params: Promise<{ hotelS
     setSending(false);
   };
 
+  const deleteNotification = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this notification?')) return;
+    const supabase = createBrowserClient();
+    await supabase.from('notifications').delete().eq('id', id);
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-800 mb-6">Notifications</h1>
@@ -100,11 +107,12 @@ export default function NotificationsPage({ params }: { params: Promise<{ hotelS
               <th className="text-left px-4 py-3 font-medium">Body</th>
               <th className="text-left px-4 py-3 font-medium">Sent At</th>
               <th className="text-left px-4 py-3 font-medium">Status</th>
+              <th className="text-right px-4 py-3 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {notifications.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-10 text-slate-400">No notifications yet</td></tr>
+              <tr><td colSpan={6} className="text-center py-10 text-slate-400">No notifications yet</td></tr>
             ) : notifications.map(n => (
               <tr key={n.id} className="border-t" style={{ borderColor: 'var(--color-border)' }}>
                 <td className="px-4 py-3">{n.room_id ? rooms.find(r => r.id === n.room_id)?.room_code || 'Room' : 'All'}</td>
@@ -115,6 +123,9 @@ export default function NotificationsPage({ params }: { params: Promise<{ hotelS
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${n.is_read ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                     {n.is_read ? 'Read' : 'Unread'}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <button onClick={() => deleteNotification(n.id)} className="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
                 </td>
               </tr>
             ))}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, use } from 'react';
+import useSWR from 'swr';
 import { createBrowserClient } from '@/lib/supabase/client';
 import type { ChatMessage } from '@/types';
 
@@ -8,7 +9,6 @@ export default function ChatPage({ params }: { params: Promise<{ hotelSlug: stri
   const { hotelSlug } = use(params);
   const [rooms, setRooms] = useState<{ id: string; room_code: string }[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMsg, setNewMsg] = useState('');
   const [hotelId, setHotelId] = useState<string | null>(null);
   const messagesEnd = useRef<HTMLDivElement>(null);
@@ -17,29 +17,25 @@ export default function ChatPage({ params }: { params: Promise<{ hotelSlug: stri
     loadRooms();
   }, []);
 
-  useEffect(() => {
-    if (selectedRoom) loadMessages(selectedRoom);
-  }, [selectedRoom]);
+  const { data: messages = [], mutate } = useSWR(
+    selectedRoom && hotelId ? `/api/room/${selectedRoom}/chat?hotelId=${hotelId}` : null,
+    async () => {
+      const supabase = createBrowserClient();
+      const { data } = await supabase.from('chat_messages').select('*')
+        .eq('room_id', selectedRoom!).order('created_at', { ascending: true }).limit(100);
+      
+      // Mark as read silently
+      supabase.from('chat_messages').update({ is_read: true })
+        .eq('room_id', selectedRoom!).eq('sender_role', 'guest').eq('is_read', false).then();
+        
+      return data as ChatMessage[] || [];
+    },
+    { refreshInterval: 5000 } // Poll every 5s for chat responsiveness
+  );
 
   useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Realtime subscription
-  useEffect(() => {
-    if (!hotelId) return;
-    const supabase = createBrowserClient();
-    const channel = supabase.channel('chat-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `hotel_id=eq.${hotelId}` },
-        (payload) => {
-          const msg = payload.new as ChatMessage;
-          if (msg.room_id === selectedRoom) {
-            setMessages(prev => [...prev, msg]);
-          }
-        })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [hotelId, selectedRoom]);
 
   const loadRooms = async () => {
     const supabase = createBrowserClient();
@@ -51,26 +47,39 @@ export default function ChatPage({ params }: { params: Promise<{ hotelSlug: stri
     if (data?.[0]) setSelectedRoom(data[0].id);
   };
 
-  const loadMessages = async (roomId: string) => {
-    const supabase = createBrowserClient();
-    const { data } = await supabase.from('chat_messages').select('*')
-      .eq('room_id', roomId).order('created_at', { ascending: true }).limit(100);
-    setMessages(data || []);
-    // Mark as read
-    await supabase.from('chat_messages').update({ is_read: true })
-      .eq('room_id', roomId).eq('sender_role', 'guest').eq('is_read', false);
-  };
+
 
   const sendMessage = async () => {
     if (!newMsg.trim() || !selectedRoom || !hotelId) return;
+    
+    const msgText = newMsg;
+    setNewMsg(''); // Clear quickly for UX
+    
+    // Optimistic UI Update
+    const optimisticMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      hotel_id: hotelId,
+      room_id: selectedRoom,
+      sender_role: 'frontoffice',
+      sender_name: 'Staff',
+      message: msgText,
+      is_read: false,
+      created_at: new Date().toISOString()
+    };
+    mutate([...messages, optimisticMsg], false);
+    
     const supabase = createBrowserClient();
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('chat_messages').insert({
-      hotel_id: hotelId, room_id: selectedRoom,
-      sender_role: 'frontoffice', sender_name: user?.user_metadata?.name || 'Staff',
-      message: newMsg,
+      hotel_id: hotelId, 
+      room_id: selectedRoom,
+      sender_role: 'frontoffice', 
+      sender_name: user?.user_metadata?.name || 'Staff',
+      message: msgText,
     });
-    setNewMsg('');
+    
+    // Re-verify real data
+    mutate();
   };
 
   return (

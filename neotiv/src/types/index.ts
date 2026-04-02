@@ -117,6 +117,22 @@ export interface Service {
   created_at: string;
 }
 
+export interface ServiceOption {
+  id: string;
+  service_id: string;
+  name: string;
+  price: number;
+  created_at: string;
+}
+
+export interface MobileSession {
+  id: string;
+  hotel_id: string;
+  room_id: string;
+  expires_at: string;
+  created_at: string;
+}
+
 export interface ServiceRequest {
   id: string;
   hotel_id: string;

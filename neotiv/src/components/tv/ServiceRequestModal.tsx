@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createBrowserClient } from '@/lib/supabase/client';
+import QRCode from 'react-qr-code';
 import { useRoomStore } from '@/stores/roomStore';
 import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
 
@@ -14,34 +14,35 @@ interface ServiceRequestModalProps {
 
 export default function ServiceRequestModal({ isOpen, onClose, service }: ServiceRequestModalProps) {
   const store = useRoomStore();
-  const [note, setNote] = useState('');
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const supabase = createBrowserClient();
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  useDpadNavigation({ enabled: isOpen && !sent, onEscape: onClose, selector: '.service-focusable' });
+  useDpadNavigation({ enabled: isOpen, onEscape: onClose, selector: '.service-focusable' });
 
-  const handleSubmit = async () => {
-    if (!service || !store.roomId || !store.hotelId) return;
-    setSending(true);
-
-    const { error } = await supabase.from('service_requests').insert({
-      hotel_id: store.hotelId,
-      room_id: store.roomId,
-      service_id: service.id,
-      note: note.trim() || null,
-      status: 'pending',
-    });
-
-    setSending(false);
-    if (!error) {
-      setSent(true);
-      setNote('');
-      setTimeout(() => { setSent(false); onClose(); }, 2000);
+  useEffect(() => {
+    if (isOpen && store.roomId && store.hotelId && !sessionId) {
+      setLoading(true);
+      fetch(`/api/room/${store.roomId}/mobile-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hotelId: store.hotelId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.sessionId) setSessionId(data.sessionId);
+          else setError(data.error || 'Failed to initialize session');
+        })
+        .catch((err) => setError(err.message))
+        .finally(() => setLoading(false));
     }
-  };
+  }, [isOpen, store.roomId, store.hotelId, sessionId]);
 
   if (!service) return null;
+
+  // The public URL that the user's phone will navigate to
+  const originUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const qrUrl = sessionId ? `${originUrl}/${store.hotelSlug}/mobile/${sessionId}` : '';
 
   return (
     <AnimatePresence>
@@ -50,8 +51,8 @@ export default function ServiceRequestModal({ isOpen, onClose, service }: Servic
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.8)' }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-[4vw]"
+          style={{ background: 'rgba(0,0,0,0.85)' }}
           onKeyDown={(e) => e.key === 'Escape' && onClose()}
         >
           <motion.div
@@ -59,49 +60,63 @@ export default function ServiceRequestModal({ isOpen, onClose, service }: Servic
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="glass-card w-[450px] overflow-hidden"
+            className="glass-card w-[800px] h-[500px] overflow-hidden flex"
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{service.icon || '🛎'}</span>
-                <h2 className="text-white text-xl font-semibold">Request {service.name}</h2>
+            {/* Left side: Instructions */}
+            <div className="w-1/2 p-8 flex flex-col justify-center border-r border-white/10 relative">
+              <button 
+                onClick={onClose} 
+                className="absolute top-6 left-6 text-white/50 hover:text-white transition-colors service-focusable" 
+                tabIndex={0}>
+                ← Back
+              </button>
+              
+              <div className="mt-8">
+                <h2 className="text-white text-3xl font-bold mb-4">
+                  Order from your Phone
+                </h2>
+                <p className="text-white/70 text-lg leading-relaxed mb-6">
+                  Scan the QR code to open the Hotel Services portal directly on your device. 
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 text-white/90">
+                     <span className="w-8 h-8 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center text-sm font-bold">1</span>
+                     <span>Browse menus & services</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-white/90">
+                     <span className="w-8 h-8 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center text-sm font-bold">2</span>
+                     <span>Add to your cart & checkout</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-white/90">
+                     <span className="w-8 h-8 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center text-sm font-bold">3</span>
+                     <span>Chat directly with Front Desk</span>
+                  </div>
+                </div>
               </div>
-              <button onClick={onClose} className="text-white/50 hover:text-white text-2xl transition-colors service-focusable" tabIndex={0}>✕</button>
             </div>
 
-            {sent ? (
-              <div className="p-10 text-center">
-                <div className="text-5xl mb-4">✅</div>
-                <p className="text-white text-xl font-semibold">Request Sent!</p>
-                <p className="text-white/60 mt-2">The front office has been notified.</p>
-              </div>
-            ) : (
-              <div className="p-6">
-                <p className="text-white/60 text-sm mb-4">
-                  Room {store.roomCode} — {store.guestName || 'Guest'}
-                </p>
-                <div>
-                  <label className="block text-white/50 text-sm mb-1">Additional note (optional)</label>
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="e.g. Please bring extra towels"
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-teal-400 focus:outline-none resize-none service-focusable"
-                    tabIndex={0}
-                  />
+            {/* Right side: QR Code */}
+            <div className="w-1/2 p-8 flex flex-col items-center justify-center bg-white/5">
+              {loading ? (
+                <div className="w-[250px] h-[250px] rounded-2xl bg-white/10 animate-pulse flex items-center justify-center">
+                  <span className="text-white/50">Generating code...</span>
                 </div>
-                <button
-                  onClick={handleSubmit}
-                  disabled={sending}
-                  className="w-full mt-4 py-3 rounded-xl font-semibold text-white transition-all service-focusable disabled:opacity-50"
-                  style={{ background: 'var(--color-teal)' }}
-                  tabIndex={0}
-                >
-                  {sending ? 'Sending...' : `Request ${service.name}`}
-                </button>
-              </div>
-            )}
+              ) : error ? (
+                <div className="text-red-400 text-center px-6">
+                  <span className="text-4xl mb-2 block">⚠️</span>
+                  <p>{error}</p>
+                </div>
+              ) : qrUrl ? (
+                <div className="bg-white p-4 rounded-2xl shadow-2xl">
+                  <QRCode value={qrUrl} size={220} />
+                </div>
+              ) : null}
+              
+              <p className="text-white/40 text-sm mt-6 font-mono text-center">
+                Secure connection<br/>Session valid for 60 minutes
+              </p>
+            </div>
+            
           </motion.div>
         </motion.div>
       )}
