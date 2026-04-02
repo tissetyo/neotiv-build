@@ -1,14 +1,20 @@
 'use client';
+import { useRoomStore } from '@/stores/roomStore';
 
 export default function MarqueeBar() {
-  const announcements = [
-    'Lorem ipsum dolor sit amet consectetur. Sit urna orci posuere eget.',
-    'Lorem ipsum dolor sit amet consectetur. Sit urna orci posuere eget.',
-    'Lorem ipsum dolor sit amet consectetur. Sit urna orci posuere eget.',
-  ];
+  const config = useRoomStore(s => s.tvLayoutConfig);
+  
+  const customText = config?.theme?.marqueeText;
+  const customSpeed = config?.theme?.marqueeSpeed;
 
-  const text = announcements.join('  •  ');
-  const duration = Math.max(text.length / 8, 20);
+  const fallbackText = [
+    'Welcome to our hotel. Enjoy your stay!',
+    'Breakfast is served from 06:00 to 10:00.',
+    'For any assistance, please use the Chat button.'
+  ].join('  •  ');
+
+  const text = customText?.trim() || fallbackText;
+  const duration = typeof customSpeed === 'number' && customSpeed > 0 ? customSpeed : Math.max(text.length / 8, 20);
 
   return (
     <div className="w-full h-full overflow-hidden flex items-center"

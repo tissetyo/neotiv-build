@@ -61,6 +61,17 @@ export default function MainDashboardPage({ params }: { params: any }) {
     { refreshInterval: 60000 } // Check every minute
   );
 
+  // Silent light reload for Notifications and Chat Updates every 60s
+  const { data: liveStatus } = useSWR(
+    mounted && store.roomId ? `/api/room/${store.roomId}/status?hotelId=${store.hotelId}` : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    { refreshInterval: 60000 }
+  );
+
   useEffect(() => {
     if (liveConfig?.tvLayoutConfig) {
       const incoming = JSON.stringify(liveConfig.tvLayoutConfig);
@@ -70,6 +81,17 @@ export default function MainDashboardPage({ params }: { params: any }) {
       }
     }
   }, [liveConfig, currentLayoutConfig, hydrate]);
+
+  useEffect(() => {
+    if (liveStatus) {
+      if (liveStatus.unreadChatCount !== store.unreadChatCount) {
+        useRoomStore.setState({ unreadChatCount: liveStatus.unreadChatCount });
+      }
+      if (liveStatus.latestNotification?.id !== store.latestNotification?.id) {
+        store.setNotification(liveStatus.latestNotification);
+      }
+    }
+  }, [liveStatus]);
 
   useEffect(() => {
     const stored = localStorage.getItem(`neotiv_room_${hotelSlug}_${roomCode}`);
@@ -299,7 +321,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
         {/* ROW 5-7: Notification Card */}
         {config.layout?.notificationCard?.visible !== false && (
           <div className="widget-animate" style={getWidgetStyle('notificationCard', '250ms')}>
-            <NotificationCard roomId={store.roomId} />
+            <NotificationCard />
           </div>
         )}
 

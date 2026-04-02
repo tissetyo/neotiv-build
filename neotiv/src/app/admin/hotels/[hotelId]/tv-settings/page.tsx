@@ -18,7 +18,7 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
   const [activeAppIndex, setActiveAppIndex] = useState<number | null>(null);
 
   const defaultConfig = {
-    theme: { opacityLight: 0.82, opacityDark: 0.60 },
+    theme: { opacityLight: 0.82, opacityDark: 0.60, marqueeText: 'Welcome to our hotel. Enjoy your stay!', marqueeSpeed: 20 },
     apps: [
       { id: "netflix", name: "Netflix", url: "com.netflix.ninja", icon: "/apps/netflix.png" },
       { id: "youtube", name: "YouTube", url: "com.google.android.youtube.tv", icon: "/apps/youtube.png" },
@@ -354,10 +354,29 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
                   onChange={(e) => setConfig({ ...config, theme: { ...config.theme, opacityLight: parseFloat(e.target.value) } })}
                   className="w-full accent-teal-500" />
               </div>
-              <div className="pt-2">
+              <div className="pt-2 border-t border-slate-100">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Dark Widgets Opacity: {config.theme.opacityDark}</label>
                 <input type="range" min="0" max="1" step="0.01" value={config.theme.opacityDark}
                   onChange={(e) => setConfig({ ...config, theme: { ...config.theme, opacityDark: parseFloat(e.target.value) } })}
+                  className="w-full accent-teal-500" />
+              </div>
+
+              <div className="pt-4 border-t border-slate-100">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Marquee Running Text</label>
+                <textarea 
+                  value={config.theme.marqueeText || ''} 
+                  onChange={(e) => setConfig({ ...config, theme: { ...config.theme, marqueeText: e.target.value } })}
+                  placeholder="Welcome to our hotel..."
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-slate-50 focus:bg-white resize-y"
+                  style={{ borderColor: 'var(--color-border)' }}
+                  rows={2}
+                />
+              </div>
+
+              <div className="pt-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Marquee Scroll Speed: {config.theme.marqueeSpeed || 20}s</label>
+                <input type="range" min="10" max="120" step="1" value={config.theme.marqueeSpeed || 20}
+                  onChange={(e) => setConfig({ ...config, theme: { ...config.theme, marqueeSpeed: parseInt(e.target.value, 10) } })}
                   className="w-full accent-teal-500" />
               </div>
 

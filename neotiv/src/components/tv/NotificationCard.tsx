@@ -1,25 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRoomStore } from '@/stores/roomStore';
 
-interface Props {
-  roomId: string | null;
-}
-
-export default function NotificationCard({ roomId }: Props) {
+export default function NotificationCard() {
   const [dismissed, setDismissed] = useState(false);
+  const notification = useRoomStore(s => s.latestNotification);
 
-  const notification = {
-    title: 'Title Notification',
-    body: 'Lorem ipsum dolor sit amet consectetur. Scelerisque ipsum nisi elementum elementum faucibus etiam nunc turpis. Adipiscing nunc sit mattis varius tellus molestie id enim a. Amet adipiscing porttitor nunc integer auctor sed duis dolor enim. Feugiat libero sit dolor risus justo.',
-    created_at: new Date().toISOString(),
-  };
+  useEffect(() => {
+    // Reset dismissed state if a new notification arrives
+    if (notification) setDismissed(false);
+  }, [notification]);
 
-  if (dismissed) return null;
+  if (dismissed || !notification) {
+    return (
+      <div className="tv-widget-light h-full flex flex-col justify-center items-center text-slate-400">
+        <span className="text-[2vw] mb-[1vh]">📭</span>
+        <p className="text-[0.8vw]">No recent notifications</p>
+      </div>
+    );
+  }
 
   const dateStr = new Date(notification.created_at).toLocaleString('en-US', {
     hour: '2-digit', minute: '2-digit', hour12: true,
-    day: 'numeric', month: 'long', year: 'numeric',
+    day: 'numeric', month: 'short'
   });
 
   return (
