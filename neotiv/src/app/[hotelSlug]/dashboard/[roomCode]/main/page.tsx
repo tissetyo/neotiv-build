@@ -194,6 +194,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
       const rowSpan = typeof dbW?.rowSpan === 'number' && dbW.rowSpan > 0 ? dbW.rowSpan : (defW?.rowSpan || 1);
       const bgColor = dbW?.bgColor;
       const bgOpacity = dbW?.bgOpacity !== undefined ? dbW.bgOpacity : 0.6;
+      const textColor = dbW?.textColor || '#ffffff';
 
       let finalBgColor = '';
       if (bgColor) {
@@ -212,8 +213,9 @@ export default function MainDashboardPage({ params }: { params: any }) {
         gridColumn: `${colStart} / span ${colSpan}`,
         gridRow: `${rowStart} / span ${rowSpan}`,
         animationDelay: baseDelay,
+        color: textColor,
         ...(finalBgColor ? { '--widget-bg': finalBgColor } : {})
-      };
+      } as React.CSSProperties;
     } catch (err) {
       console.error(`Layout Error for ${key}:`, err);
       return { animationDelay: baseDelay };
@@ -227,9 +229,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
           backgroundSize: 'cover', 
           backgroundPosition: 'center',
           '--widget-dark-opacity': config.theme?.opacityDark ?? 0.60,
-          '--widget-light-opacity': config.theme?.opacityLight ?? 0.82,
-          '--tv-text-color': config.theme?.textColor ?? '#ffffff',
-          color: 'var(--tv-text-color)'
+          '--widget-light-opacity': config.theme?.opacityLight ?? 0.82
         } as React.CSSProperties}>
 
       {/* ===== BENTO GRID — matches reference layout ===== */}
@@ -244,9 +244,9 @@ export default function MainDashboardPage({ params }: { params: any }) {
         {/* ROW 1-2: Analog Clocks */}
         {config.layout?.analogClocks?.visible !== false && store.clockTimezones?.length >= 3 && (
           <div className="tv-widget flex items-center justify-around widget-animate tv-focusable" tabIndex={0} style={getWidgetStyle('analogClocks', '0ms')}>
-            <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={85} />
-            <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={105} />
-            <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={85} />
+            <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={85} clockStyle={config.theme?.clockStyle} />
+            <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={105} clockStyle={config.theme?.clockStyle} />
+            <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={85} clockStyle={config.theme?.clockStyle} />
           </div>
         )}
 
@@ -298,15 +298,19 @@ export default function MainDashboardPage({ params }: { params: any }) {
                 '--app-color': app.brandColor || '#334155',
               } as unknown as React.CSSProperties}
               tabIndex={0}>
-                <div className="w-[3.5vw] h-[3.5vw] mb-[0.8vh] group-hover:scale-110 transition-transform duration-300 relative z-10 flex items-center justify-center"
-                     style={{ color: app.brandColor || '#e2e8f0' }}>
+                <div className="mb-[0.8vh] group-hover:scale-110 transition-transform duration-300 relative z-10 flex items-center justify-center"
+                     style={{ 
+                       width: `${3.5 * (app.iconScale || 1)}vw`, 
+                       height: `${3.5 * (app.iconScale || 1)}vw`, 
+                       color: app.brandColor || '#e2e8f0' 
+                     }}>
                    {app.icon && typeof app.icon === 'string' && (app.icon.startsWith('/') || app.icon.startsWith('http')) ? (
                       <img src={app.icon} alt={app.name} className="w-full h-full object-contain" />
                    ) : null}
                 </div>
-                <span className="text-[1vw] font-bold tracking-wide relative z-10 truncate px-2 w-full text-center" style={{ color: 'var(--tv-text-color)' }}>{app.name}</span>
+                <span className="text-[1vw] font-bold tracking-wide relative z-10 truncate px-2 w-full text-center">{app.name}</span>
                 {app.subtitle && (
-                  <span className="text-[0.5vw] opacity-40 mt-[0.1vh] relative z-10" style={{ color: 'var(--tv-text-color)' }}>{app.subtitle}</span>
+                  <span className="text-[0.5vw] opacity-40 mt-[0.1vh] relative z-10">{app.subtitle}</span>
                 )}
             </button>
           );

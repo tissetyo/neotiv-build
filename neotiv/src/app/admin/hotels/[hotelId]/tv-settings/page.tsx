@@ -316,9 +316,19 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
                         {key.startsWith('app-') ? (config.apps.find((a: any) => a.id === key.replace('app-', ''))?.name || key) : key.replace(/([A-Z])/g, ' $1').trim().replace('Card', '')}
                       </span>
                     </label>
-                    <label className="flex items-center justify-center shrink-0 cursor-pointer pl-2 border-slate-200">
+                    <div className="flex items-center shrink-0 pl-2">
                       <input
-                        title={`Theme Color for ${key}`}
+                        title={`Text Color for ${key}`}
+                        type="color"
+                        value={config.layout[key].textColor || '#ffffff'}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          layout: { ...config.layout, [key]: { ...config.layout[key], textColor: e.target.value } }
+                        })}
+                        className="w-5 h-5 mr-1 p-0 border-0 rounded cursor-pointer overflow-hidden opacity-90 hover:opacity-100 transition-opacity bg-transparent"
+                      />
+                      <input
+                        title={`Background Color for ${key}`}
                         type="color"
                         value={config.layout[key].bgColor || '#334155'}
                         onChange={(e) => setConfig({
@@ -327,7 +337,7 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
                         })}
                         className="w-6 h-6 p-0 border-0 rounded cursor-pointer overflow-hidden opacity-90 hover:opacity-100 transition-opacity bg-transparent"
                       />
-                    </label>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/60">
                      <span className="text-[10px] text-slate-500 uppercase font-semibold tracking-wider">Opacity</span>
@@ -382,15 +392,15 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
               </div>
 
               <div className="pt-4 border-t border-slate-100">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Global Text Color</label>
-                <div className="flex items-center gap-3">
-                   <input type="color" value={config.theme.textColor || '#ffffff'}
-                     onChange={(e) => setConfig({ ...config, theme: { ...config.theme, textColor: e.target.value } })}
-                     className="w-8 h-8 rounded cursor-pointer p-0 border-0" 
-                     title="Global Text Color" />
-                   <span className="text-sm text-slate-500 font-mono uppercase">{config.theme.textColor || '#ffffff'}</span>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-1">Applies globally to text elements over the TV background to ensure contrast.</p>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Clock Appearance</label>
+                <select 
+                  value={config.theme.clockStyle || 'minimal'} 
+                  onChange={(e) => setConfig({ ...config, theme: { ...config.theme, clockStyle: e.target.value } })}
+                  className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-lg outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 p-2 shadow-sm"
+                >
+                  <option value="minimal">Minimal (Translucent Ticks)</option>
+                  <option value="classic">Classic (White Face & Numbers)</option>
+                </select>
               </div>
 
               <div className="pt-4 border-t border-slate-100">
@@ -469,6 +479,18 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
                           setConfig({ ...config, apps: newApps });
                         }}
                         className="w-full text-[11px] bg-transparent border-b border-slate-300 focus:border-teal-500 outline-none py-1 text-slate-600 font-mono" />
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/50">
+                         <span className="text-[10px] text-slate-500 uppercase font-semibold">Scale</span>
+                         <input type="range" min="0.5" max="2" step="0.1" value={app.iconScale || 1}
+                           title="App Icon Scaling Factor"
+                           onChange={(e) => {
+                             const newApps = [...config.apps];
+                             newApps[idx].iconScale = parseFloat(e.target.value);
+                             setConfig({ ...config, apps: newApps });
+                           }}
+                           className="flex-1 accent-teal-500 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                         <span className="text-[10px] text-slate-500 w-8 text-right font-mono">{Math.round((app.iconScale || 1) * 100)}%</span>
+                      </div>
                     </div>
                   </div>
                 </div>

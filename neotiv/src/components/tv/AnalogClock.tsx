@@ -6,9 +6,10 @@ interface Props {
   timezone: string;
   label: string;
   size?: number;
+  clockStyle?: 'minimal' | 'classic';
 }
 
-export default function AnalogClock({ timezone, label, size = 120 }: Props) {
+export default function AnalogClock({ timezone, label, size = 120, clockStyle = 'minimal' }: Props) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -44,6 +45,73 @@ export default function AnalogClock({ timezone, label, size = 120 }: Props) {
   const cx = r;
   const cy = r;
 
+  if (clockStyle === 'classic') {
+    return (
+      <div className="flex flex-col items-center gap-[0.8vh]">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {/* Base Face */}
+          <circle cx={cx} cy={cy} r={r - 2} fill="#ffffff" />
+          
+          {/* 60 Minute Ticks */}
+          {Array.from({ length: 60 }, (_, i) => {
+            const angle = (i * 6 - 90) * (Math.PI / 180);
+            const isHour = i % 5 === 0;
+            const outer = r - 4;
+            const inner = isHour ? r - 8 : r - 6;
+            return (
+              <line key={i}
+                x1={cx + Math.cos(angle) * inner} y1={cy + Math.sin(angle) * inner}
+                x2={cx + Math.cos(angle) * outer} y2={cy + Math.sin(angle) * outer}
+                stroke={isHour ? "#9ca3af" : "#d1d5db"} 
+                strokeWidth={isHour ? 1.5 : 1}
+                strokeLinecap="round" />
+            );
+          })}
+
+          {/* Numbers 1-12 */}
+          {Array.from({ length: 12 }, (_, i) => {
+            const num = i === 0 ? 12 : i;
+            const angle = (i * 30 - 90) * (Math.PI / 180);
+            const radius = r - 18;
+            const x = cx + Math.cos(angle) * radius;
+            const y = cy + Math.sin(angle) * radius + (size * 0.04); // slight vertical baseline tweak
+            return (
+              <text key={`num-${i}`} x={x} y={y} fill="#1f2937" fontSize={size * 0.16} fontWeight="600" textAnchor="middle" dominantBaseline="middle" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                {num}
+              </text>
+            );
+          })}
+
+          {/* Hour hand */}
+          <line x1={cx} y1={cy} 
+            x2={cx + Math.cos((hourAngle - 90) * Math.PI / 180) * (r * 0.50)}
+            y2={cy + Math.sin((hourAngle - 90) * Math.PI / 180) * (r * 0.50)}
+            stroke="#1f2937" strokeWidth={size * 0.05} strokeLinecap="round" />
+            
+          {/* Minute hand */}
+          <line x1={cx} y1={cy} 
+            x2={cx + Math.cos((minuteAngle - 90) * Math.PI / 180) * (r * 0.70)}
+            y2={cy + Math.sin((minuteAngle - 90) * Math.PI / 180) * (r * 0.70)}
+            stroke="#1f2937" strokeWidth={size * 0.035} strokeLinecap="round" />
+            
+          {/* Second hand (orange style, extending slightly backwards) */}
+          <line 
+            x1={cx - Math.cos((secondAngle - 90) * Math.PI / 180) * (r * 0.15)} 
+            y1={cy - Math.sin((secondAngle - 90) * Math.PI / 180) * (r * 0.15)} 
+            x2={cx + Math.cos((secondAngle - 90) * Math.PI / 180) * (r * 0.75)}
+            y2={cy + Math.sin((secondAngle - 90) * Math.PI / 180) * (r * 0.75)}
+            stroke="#f97316" strokeWidth={size * 0.015} strokeLinecap="round" />
+            
+          {/* Center dot */}
+          <circle cx={cx} cy={cy} r={size * 0.025} fill="#f97316" />
+          <circle cx={cx} cy={cy} r={size * 0.01} fill="#ffffff" />
+        </svg>
+        <span className="text-white text-[0.9vw] font-medium tracking-wide">{label}</span>
+      </div>
+    );
+  }
+
+  // Original Minimal Style
   return (
     <div className="flex flex-col items-center gap-[0.8vh]">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
