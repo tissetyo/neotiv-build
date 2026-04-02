@@ -112,7 +112,7 @@ export default function RoomsPage({ params }: { params: Promise<{ hotelSlug: str
             <p className="text-slate-500 font-medium">No rooms match your filters.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 xl:grid-cols-4 gap-5 overflow-y-auto pb-10 hide-scrollbar h-full">
+          <div className="grid grid-cols-3 xl:grid-cols-4 content-start items-start gap-5 overflow-y-auto pb-10 hide-scrollbar h-full">
             {filtered.map(room => (
               <div 
                 key={room.id} 

@@ -112,6 +112,7 @@ export interface Service {
   hotel_id: string;
   name: string;
   icon: string | null;
+  color_theme: string | null;
   description: string | null;
   sort_order: number;
   is_active: boolean;

@@ -20,6 +20,15 @@ const ICONS: Record<string, React.ReactNode> = {
   Bell: <Bell className="w-5 h-5" />
 };
 
+const COLORS = [
+  { id: 'teal', label: 'Teal', class: 'bg-teal-500' },
+  { id: 'amber', label: 'Amber', class: 'bg-amber-500' },
+  { id: 'rose', label: 'Rose', class: 'bg-rose-500' },
+  { id: 'indigo', label: 'Indigo', class: 'bg-indigo-500' },
+  { id: 'sky', label: 'Sky', class: 'bg-sky-500' },
+  { id: 'violet', label: 'Violet', class: 'bg-violet-500' }
+];
+
 export default function ServicesConfigPage({ params }: { params: Promise<{ hotelSlug: string }> }) {
   const { hotelSlug } = use(params);
   const [hotelId, setHotelId] = useState<string | null>(null);
@@ -29,6 +38,7 @@ export default function ServicesConfigPage({ params }: { params: Promise<{ hotel
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('Bell');
+  const [newCatColor, setNewCatColor] = useState('teal');
 
   // States mapping Items (Options)
   const [newOptionName, setNewOptionName] = useState('');
@@ -72,6 +82,7 @@ export default function ServicesConfigPage({ params }: { params: Promise<{ hotel
       hotel_id: hotelId,
       name: newCatName,
       icon: newCatIcon,
+      color_theme: newCatColor,
       sort_order: services.length,
       is_active: true
     }).select().single();
@@ -80,6 +91,7 @@ export default function ServicesConfigPage({ params }: { params: Promise<{ hotel
       setSelectedServiceId(data.id);
     }
     setNewCatName('');
+    setNewCatColor('teal');
     setIsAddingCategory(false);
     mutateServices();
   };
@@ -171,6 +183,22 @@ export default function ServicesConfigPage({ params }: { params: Promise<{ hotel
                    </div>
                  </div>
 
+                 <div className="mb-4">
+                   <p className="text-xs text-slate-500 font-semibold mb-2">Select Color Theme:</p>
+                   <div className="flex flex-wrap gap-2">
+                     {COLORS.map(color => (
+                       <button
+                         key={color.id}
+                         onClick={() => setNewCatColor(color.id)}
+                         className={`w-6 h-6 rounded-full transition-all ${color.class} ${
+                           newCatColor === color.id ? 'ring-2 ring-offset-2 ring-slate-800 scale-110' : 'hover:scale-105'
+                         }`}
+                         title={color.label}
+                       />
+                     ))}
+                   </div>
+                 </div>
+
                  <div className="flex gap-2">
                    <button onClick={handleCreateCategory} disabled={!newCatName} className="flex-1 bg-teal-600 text-white py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 hover:bg-teal-700 disabled:opacity-50">
                      <Check className="w-4 h-4" /> Save
@@ -185,6 +213,7 @@ export default function ServicesConfigPage({ params }: { params: Promise<{ hotel
              {services.map(s => {
                // Handle legacy emoji icons gracefully or fallbacks
                const SafeIcon = ICONS[s.icon || ''] || <span className="text-lg leading-none">{s.icon || '🛎️'}</span>;
+               const catColorObj = COLORS.find(c => c.id === s.color_theme) || COLORS[0];
                
                return (
                  <button 
@@ -192,8 +221,8 @@ export default function ServicesConfigPage({ params }: { params: Promise<{ hotel
                    onClick={() => setSelectedServiceId(s.id)}
                    className={`w-full flex items-center justify-between text-left px-4 py-3.5 rounded-xl transition-all border group ${
                      selectedServiceId === s.id 
-                     ? 'bg-gradient-to-r from-teal-500 to-teal-600 border-teal-500 text-white shadow-md font-semibold' 
-                     : 'bg-white border-slate-200 text-slate-600 hover:border-teal-300 hover:shadow-sm'
+                     ? `${catColorObj.class} border-transparent text-white shadow-md font-semibold` 
+                     : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:shadow-sm'
                    }`}
                  >
                    <div className="flex items-center">
@@ -230,11 +259,13 @@ export default function ServicesConfigPage({ params }: { params: Promise<{ hotel
              <>
                <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                   <div>
-                    <h2 className="font-bold text-slate-800 text-xl flex items-center gap-3">
-                      {ICONS[services.find(s => s.id === selectedServiceId)?.icon || ''] || ''}
+                    <h2 className={`font-bold text-slate-800 text-xl flex items-center gap-3`}>
+                      <span className={`p-2 rounded-xl text-white ${COLORS.find(c => c.id === services.find(s => s.id === selectedServiceId)?.color_theme)?.class || 'bg-teal-500'}`}>
+                         {ICONS[services.find(s => s.id === selectedServiceId)?.icon || ''] || ''}
+                      </span>
                       {services.find(s => s.id === selectedServiceId)?.name} 
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1">Configure all packages available under this category.</p>
+                    <p className="text-sm text-slate-500 mt-2">Configure all packages available under this category.</p>
                   </div>
                </div>
 
