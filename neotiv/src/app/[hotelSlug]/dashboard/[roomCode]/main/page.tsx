@@ -229,7 +229,9 @@ export default function MainDashboardPage({ params }: { params: any }) {
           backgroundSize: 'cover', 
           backgroundPosition: 'center',
           '--widget-dark-opacity': config.theme?.opacityDark ?? 0.60,
-          '--widget-light-opacity': config.theme?.opacityLight ?? 0.82
+          '--widget-light-opacity': config.theme?.opacityLight ?? 0.82,
+          '--focus-color': config.theme?.focusColor ?? '#14b8a6',
+          '--focus-style': config.theme?.focusStyle ?? 'outline'
         } as React.CSSProperties}>
 
       {/* ===== BENTO GRID — matches reference layout ===== */}
@@ -244,9 +246,9 @@ export default function MainDashboardPage({ params }: { params: any }) {
         {/* ROW 1-2: Analog Clocks */}
         {config.layout?.analogClocks?.visible !== false && store.clockTimezones?.length >= 3 && (
           <div className="tv-widget flex items-center justify-around widget-animate tv-focusable" tabIndex={0} style={getWidgetStyle('analogClocks', '0ms')}>
-            <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={85} clockStyle={config.theme?.clockStyle} />
-            <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={105} clockStyle={config.theme?.clockStyle} />
-            <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={85} clockStyle={config.theme?.clockStyle} />
+            <AnalogClock timezone={store.clockTimezones[0]} label={store.clockLabels[0]} size={100} clockStyle={config.theme?.clockStyle} />
+            <AnalogClock timezone={store.clockTimezones[1]} label={store.clockLabels[1]} size={100} clockStyle={config.theme?.clockStyle} />
+            <AnalogClock timezone={store.clockTimezones[2]} label={store.clockLabels[2]} size={100} clockStyle={config.theme?.clockStyle} />
           </div>
         )}
 

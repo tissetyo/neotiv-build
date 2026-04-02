@@ -79,7 +79,7 @@
 }
 
 /* ═══════════════════════════════════════════
-   FOCUS STATES (Teal Stroke)
+   FOCUS STATES — driven by --focus-color and --focus-style
    ═══════════════════════════════════════════ */
 .tv-focusable,
 .alarm-focusable,
@@ -89,24 +89,67 @@
   transition: all 0.25s ease;
 }
 
+/* ── Style: outline ── */
 .tv-focusable:focus,
-.tv-focusable:focus-visible,
-.alarm-focusable:focus,
-.alarm-focusable:focus-visible,
-.chat-focusable:focus,
-.chat-focusable:focus-visible,
-.service-focusable:focus,
-.service-focusable:focus-visible,
-.app-launcher-focusable:focus,
-.app-launcher-focusable:focus-visible {
-  outline: 3px solid var(--color-teal);
+.tv-focusable:focus-visible {
+  outline: 3px solid var(--focus-color, #14b8a6);
   outline-offset: 4px;
+}
+
+/* ── Style: glow ── */
+[style*="--focus-style: glow"] .tv-focusable:focus,
+[style*="--focus-style: glow"] .tv-focusable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-color, #14b8a6), 0 0 20px var(--focus-color, #14b8a6), 0 0 40px color-mix(in srgb, var(--focus-color, #14b8a6) 40%, transparent);
+}
+
+/* ── Style: scale ── */
+[style*="--focus-style: scale"] .tv-focusable:focus,
+[style*="--focus-style: scale"] .tv-focusable:focus-visible {
+  outline: 3px solid var(--focus-color, #14b8a6);
+  outline-offset: 4px;
+  transform: scale(1.06);
+  z-index: 10;
+}
+
+/* ── Style: glow-scale ── */
+[style*="--focus-style: glow-scale"] .tv-focusable:focus,
+[style*="--focus-style: glow-scale"] .tv-focusable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-color, #14b8a6), 0 0 24px var(--focus-color, #14b8a6);
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+/* ── Style: ring-pulse ── */
+@keyframes ringPulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--focus-color, #14b8a6); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--focus-color, #14b8a6) 50%, transparent); }
+}
+[style*="--focus-style: ring-pulse"] .tv-focusable:focus,
+[style*="--focus-style: ring-pulse"] .tv-focusable:focus-visible {
+  outline: none;
+  animation: ringPulse 1.5s ease-in-out infinite;
+}
+
+/* ── Style: underline ── */
+[style*="--focus-style: underline"] .tv-focusable:focus,
+[style*="--focus-style: underline"] .tv-focusable:focus-visible {
+  outline: none;
+  border-bottom: 4px solid var(--focus-color, #14b8a6);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--focus-color, #14b8a6) 40%, transparent);
+}
+
+/* ── Style: inset ── */
+[style*="--focus-style: inset"] .tv-focusable:focus,
+[style*="--focus-style: inset"] .tv-focusable:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--focus-color, #14b8a6), inset 0 0 16px color-mix(in srgb, var(--focus-color, #14b8a6) 20%, transparent);
 }
 
 /* ═══════════════════════════════════════════
    APP CARD — Dark Base + Brand glow + Gradient Stroke
    ═══════════════════════════════════════════ */
-/* Removed border-glow-focus animation to prevent overwriting of widgetMount animation */
 
 .tv-app-card {
   --app-color: rgba(255, 255, 255, 0.15);
@@ -132,15 +175,6 @@
 
 .tv-app-card:hover::after {
   opacity: 0.35;
-}
-
-.tv-app-card.tv-focusable:focus,
-.tv-app-card.tv-focusable:focus-visible {
-  outline: 3px solid var(--color-teal);
-  outline-offset: 4px;
-  transform: scale(1.04);
-  z-index: 10;
-  /* Removed border-glow-focus animation as it replaced widgetMount and caused opacity to revert to 0 */
 }
 
 .tv-app-card.tv-focusable:focus::after {

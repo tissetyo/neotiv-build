@@ -18,7 +18,7 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
   const [activeAppIndex, setActiveAppIndex] = useState<number | null>(null);
 
   const defaultConfig = {
-    theme: { opacityLight: 0.82, opacityDark: 0.60, marqueeText: 'Welcome to our hotel. Enjoy your stay!', marqueeSpeed: 20, textColor: '#ffffff' },
+    theme: { opacityLight: 0.82, opacityDark: 0.60, marqueeText: 'Welcome to our hotel. Enjoy your stay!', marqueeSpeed: 20, textColor: '#ffffff', focusColor: '#14b8a6', focusStyle: 'outline' },
     apps: [
       { id: "netflix", name: "Netflix", url: "com.netflix.ninja", icon: "/apps/netflix.png" },
       { id: "youtube", name: "YouTube", url: "com.google.android.youtube.tv", icon: "/apps/youtube.png" },
@@ -90,27 +90,32 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
 
   const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || activeAppIndex === null) return;
+    const targetIdx = activeAppIndex;
+    // Reset immediately so next upload always fires onChange
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!file || targetIdx === null || targetIdx >= config.apps.length) {
+      setActiveAppIndex(null);
+      return;
+    }
 
     const formData = new FormData();
     formData.append('file', file);
     formData.append('hotel_id', hotelId);
-    formData.append('app_id', config.apps[activeAppIndex].id || `app-${Date.now()}`);
+    formData.append('app_id', config.apps[targetIdx].id || `app-${Date.now()}`);
 
     try {
       const res = await fetch('/api/upload/tv-app-icon', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.url) {
         const newApps = [...config.apps];
-        newApps[activeAppIndex].icon = data.url;
-        setConfig({ ...config, apps: newApps });
+        newApps[targetIdx].icon = `${data.url}?t=${Date.now()}`;
+        setConfig((prev: any) => ({ ...prev, apps: newApps }));
       } else {
         alert(data.error || 'Upload failed');
       }
     } catch {
       alert('Upload failed');
     }
-    if (fileInputRef.current) fileInputRef.current.value = '';
     setActiveAppIndex(null);
   };
 
@@ -399,8 +404,34 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
                   className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-lg outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 p-2 shadow-sm"
                 >
                   <option value="minimal">Minimal (Translucent Ticks)</option>
-                  <option value="classic">Classic (White Face & Numbers)</option>
+                  <option value="classic">Classic (White Face, Ticks Only)</option>
                 </select>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Focus Border Color</label>
+                <div className="flex items-center gap-3 mb-3">
+                   <input type="color" value={config.theme.focusColor || '#14b8a6'}
+                     onChange={(e) => setConfig({ ...config, theme: { ...config.theme, focusColor: e.target.value } })}
+                     className="w-8 h-8 rounded cursor-pointer p-0 border-0" 
+                     title="Focus Color" />
+                   <span className="text-sm text-slate-500 font-mono uppercase">{config.theme.focusColor || '#14b8a6'}</span>
+                </div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Focus Interaction Style</label>
+                <select 
+                  value={config.theme.focusStyle || 'outline'} 
+                  onChange={(e) => setConfig({ ...config, theme: { ...config.theme, focusStyle: e.target.value } })}
+                  className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-lg outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 p-2 shadow-sm"
+                >
+                  <option value="outline">Outline Border</option>
+                  <option value="glow">Neon Glow</option>
+                  <option value="scale">Scale Up</option>
+                  <option value="glow-scale">Glow + Scale</option>
+                  <option value="ring-pulse">Pulsing Ring</option>
+                  <option value="underline">Bottom Underline</option>
+                  <option value="inset">Inset Shadow</option>
+                </select>
+                <p className="text-[10px] text-slate-500 mt-1">Defines how widgets visually respond when selected via D-pad navigation.</p>
               </div>
 
               <div className="pt-4 border-t border-slate-100">
@@ -437,7 +468,17 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
             <div className="flex items-center justify-between mb-4 shrink-0">
               <h2 className="text-lg font-bold text-slate-800">App Launchers</h2>
               <button
-                onClick={() => setConfig({ ...config, apps: [...config.apps, { id: `app-${Date.now()}`, name: "New App", url: "", icon: "/apps/default.png" }] })}
+                type="button"
+                onClick={() => {
+                  const newId = `app-${Date.now()}`;
+                  const newApp = { id: newId, name: 'New App', url: '', icon: '/apps/default.png' };
+                  const layoutKey = `app-${newId}`;
+                  setConfig((prev: any) => ({
+                    ...prev,
+                    apps: [...prev.apps, newApp],
+                    layout: { ...prev.layout, [layoutKey]: { colStart: 6, colSpan: 2, rowStart: 8, rowSpan: 2, visible: true, bgColor: '#334155', textColor: '#ffffff' } }
+                  }));
+                }}
                 className="text-sm font-medium text-teal-600 hover:text-teal-700"
               >+ Add App</button>
             </div>
@@ -447,10 +488,13 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
             <div className="space-y-4 overflow-y-auto pr-2 flex-1 pb-4">
               {config.apps.map((app: any, idx: number) => (
                 <div key={idx} className="p-4 border border-slate-200 rounded-lg bg-slate-50 relative group">
-                  <button onClick={() => {
+                  <button type="button" onClick={() => {
+                    const removedAppId = config.apps[idx]?.id;
                     const newApps = [...config.apps];
                     newApps.splice(idx, 1);
-                    setConfig({ ...config, apps: newApps });
+                    const newLayout = { ...config.layout };
+                    if (removedAppId) delete newLayout[`app-${removedAppId}`];
+                    setConfig((prev: any) => ({ ...prev, apps: newApps, layout: newLayout }));
                   }} className="absolute top-2 right-2 text-slate-300 hover:text-red-500 text-lg leading-none font-bold opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
                   
                   <div className="flex gap-4 items-start">
