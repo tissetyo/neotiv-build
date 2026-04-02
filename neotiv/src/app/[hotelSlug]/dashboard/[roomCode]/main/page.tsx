@@ -21,6 +21,7 @@ import AppLauncher from '@/components/tv/AppLauncher';
 import ServiceRequestModal from '@/components/tv/ServiceRequestModal';
 import ConnectionStatus from '@/components/tv/ConnectionStatus';
 import NotificationsModal from '@/components/tv/NotificationsModal';
+import { CheckoutWidget, CheckoutModal } from '@/components/tv/CheckoutReminder';
 import type { AppConfig } from '@/components/tv/AppLauncher';
 import { AlarmClock, MessageCircle, Bell } from 'lucide-react';
 
@@ -113,6 +114,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
           wifiSsid: data.wifiSsid || 'HotelABC',
           wifiPassword: data.wifiPassword || 'stayinhereforwhile',
           wifiUsername: data.wifiUsername || 'Guest',
+          checkoutDate: data.checkoutDate || null,
           clockTimezones: data.clockTimezones || ['America/New_York', 'Europe/Paris', 'Asia/Shanghai'],
           clockLabels: data.clockLabels || ['New York', 'France', 'China'],
         });
@@ -149,6 +151,10 @@ export default function MainDashboardPage({ params }: { params: any }) {
     });
   }, []);
   const handleServiceRequest = useCallback((service: { id: string; name: string; icon: string | null }) => { setRequestService(service); }, []);
+
+  const isCheckoutDay = store.checkoutDate 
+    ? new Date(`${store.checkoutDate}T00:00:00`).toDateString() === new Date().toDateString() 
+    : false;
 
   if (!mounted) return <div className="w-screen h-screen bg-slate-900" />;
 
@@ -306,10 +312,14 @@ export default function MainDashboardPage({ params }: { params: any }) {
 
 
         {/* ================= RIGHT COLUMN ================= */}
-        {/* ROW 1-2: Guest Card */}
+        {/* ROW 1-2: Guest Card or Checkout Reminder */}
         {config.layout?.guestCard?.visible !== false && (
           <div className="widget-animate" style={getWidgetStyle('guestCard', '100ms')}>
-            <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} />
+             {isCheckoutDay ? (
+               <CheckoutWidget onOpenModal={() => setActiveModal('checkout-reminder')} />
+             ) : (
+               <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} />
+             )}
           </div>
         )}
 
@@ -393,6 +403,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
 
       {/* Modals */}
       <ChatModal isOpen={activeModal === 'chat'} onClose={() => setActiveModal(null)} />
+      <CheckoutModal isOpen={activeModal === 'checkout-reminder'} onClose={() => setActiveModal(null)} />
       <AlarmModal isOpen={activeModal === 'alarm'} onClose={() => setActiveModal(null)} />
       <NotificationsModal isOpen={activeModal === 'notif'} onClose={() => setActiveModal(null)} />
       <AppLauncher app={launchApp} isOpen={!!launchApp} onClose={() => setLaunchApp(null)} />

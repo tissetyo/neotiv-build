@@ -17,6 +17,7 @@ interface SessionData {
   wifiSsid: string;
   wifiPassword: string;
   wifiUsername: string;
+  checkoutDate: string | null;
   welcomeMessage: string | null;
   tvLayoutConfig?: any;
 }

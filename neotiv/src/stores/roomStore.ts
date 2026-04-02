@@ -13,6 +13,7 @@ interface RoomState {
   hotelName: string;
   hotelTimezone: string;
   hotelLocation: string;
+  checkoutDate: string | null;
   wifiSsid: string;
   wifiPassword: string;
   wifiUsername: string;
@@ -43,6 +44,7 @@ const initialState = {
   hotelName: '',
   hotelTimezone: 'Asia/Jakarta',
   hotelLocation: '',
+  checkoutDate: null,
   wifiSsid: '',
   wifiPassword: '',
   wifiUsername: '',
@@ -77,6 +79,7 @@ export const useRoomStore = create<RoomState>()(
         guestName: state.guestName,
         hotelName: state.hotelName,
         hotelTimezone: state.hotelTimezone,
+        checkoutDate: state.checkoutDate,
         wifiSsid: state.wifiSsid,
         wifiPassword: state.wifiPassword,
         wifiUsername: state.wifiUsername,

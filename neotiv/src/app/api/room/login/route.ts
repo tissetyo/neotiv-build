@@ -57,6 +57,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       wifiSsid: hotel.wifi_ssid,
       wifiPassword: hotel.wifi_password,
       wifiUsername: hotel.wifi_username,
+      checkoutDate: room.checkout_date,
       clockTimezones: [hotel.clock_timezone_1, hotel.clock_timezone_2, hotel.clock_timezone_3],
       clockLabels: [hotel.clock_label_1, hotel.clock_label_2, hotel.clock_label_3],
       airportCode: hotel.airport_iata_code,

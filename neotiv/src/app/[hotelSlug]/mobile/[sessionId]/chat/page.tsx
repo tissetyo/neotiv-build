@@ -28,7 +28,7 @@ export default function MobileChatPage({ params }: { params: Promise<{ hotelSlug
 
   // 2. Poll Messages
   const { data: messages = [], mutate } = useSWR(
-    hotelId && roomId ? `/api/room/${roomId}/chat?hotelId=${hotelId}` : null,
+    roomId ? `chat-${roomId}` : null,
     async () => {
       const supabase = createBrowserClient();
       const { data } = await supabase.from('chat_messages').select('*')

@@ -18,7 +18,7 @@ export default function ChatPage({ params }: { params: Promise<{ hotelSlug: stri
   }, []);
 
   const { data: messages = [], mutate } = useSWR(
-    selectedRoom && hotelId ? `/api/room/${selectedRoom}/chat?hotelId=${hotelId}` : null,
+    selectedRoom ? `chat-${selectedRoom}` : null,
     async () => {
       const supabase = createBrowserClient();
       const { data } = await supabase.from('chat_messages').select('*')

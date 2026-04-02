@@ -2,8 +2,22 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, Plus, Minus, Info } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Info, Utensils, Car, Shirt, Coffee, Sparkles, Scissors, ShoppingBag, Map, Briefcase, Bell } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
+
+// Standard icon library mapping
+const ICONS: Record<string, React.ReactNode> = {
+  Utensils: <Utensils className="w-4 h-4" />,
+  Car: <Car className="w-4 h-4" />,
+  Shirt: <Shirt className="w-4 h-4" />,
+  Coffee: <Coffee className="w-4 h-4" />,
+  Sparkles: <Sparkles className="w-4 h-4" />,
+  Scissors: <Scissors className="w-4 h-4" />,
+  ShoppingBag: <ShoppingBag className="w-4 h-4" />,
+  Map: <Map className="w-4 h-4" />,
+  Briefcase: <Briefcase className="w-4 h-4" />,
+  Bell: <Bell className="w-4 h-4" />
+};
 import type { Service, ServiceOption } from '@/types';
 
 interface CatalogProps {
@@ -90,7 +104,10 @@ export default function ServiceCatalogClient({ services, options, sessionId, roo
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
               }`}
             >
-              {service.icon} {service.name}
+              <div className="flex items-center gap-2">
+                 {ICONS[service.icon || ''] || <span className="text-sm">{service.icon}</span>} 
+                 {service.name}
+              </div>
             </button>
           ))}
         </div>

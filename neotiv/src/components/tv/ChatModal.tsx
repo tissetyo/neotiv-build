@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import useSWR from 'swr';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useRoomStore } from '@/stores/roomStore';
 import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
@@ -21,47 +22,26 @@ interface ChatModalProps {
 
 export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
   const store = useRoomStore();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const supabase = createBrowserClient();
 
-  // Load chat history
-  useEffect(() => {
-    if (!isOpen || !store.roomId) return;
-
-    const loadMessages = async () => {
+  // SWR Polling instead of WebSockets
+  const { data: messages = [], mutate } = useSWR(
+    isOpen && store.roomId ? `chat-${store.roomId}` : null,
+    async () => {
+      const supabase = createBrowserClient();
       const { data } = await supabase
         .from('chat_messages')
         .select('*')
         .eq('room_id', store.roomId!)
         .order('created_at', { ascending: true })
         .limit(100);
-
-      if (data) setMessages(data as ChatMessage[]);
-    };
-
-    loadMessages();
-
-    // Subscribe to new messages
-    const channel = supabase
-      .channel(`chat-${store.roomId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages',
-        filter: `room_id=eq.${store.roomId}`,
-      }, (payload) => {
-        setMessages((prev) => [...prev, payload.new as ChatMessage]);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [isOpen, store.roomId, supabase]);
+      return data as ChatMessage[] || [];
+    },
+    { refreshInterval: 3000 }
+  );
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -83,17 +63,28 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
     if (!input.trim() || !store.roomId || !store.hotelId) return;
     setSending(true);
 
-    const { error } = await supabase.from('chat_messages').insert({
+    const msgText = input.trim();
+    setInput('');
+
+    // Optimistic UI push
+    mutate([...messages, {
+      id: crypto.randomUUID(),
+      sender_role: 'guest',
+      sender_name: store.guestName || 'Guest',
+      message: msgText,
+      created_at: new Date().toISOString()
+    }], false);
+
+    const supabase = createBrowserClient();
+    await supabase.from('chat_messages').insert({
       hotel_id: store.hotelId,
       room_id: store.roomId,
       sender_role: 'guest',
       sender_name: store.guestName || 'Guest',
-      message: input.trim(),
+      message: msgText,
     });
 
-    if (!error) {
-      setInput('');
-    }
+    mutate();
     setSending(false);
   };
 
