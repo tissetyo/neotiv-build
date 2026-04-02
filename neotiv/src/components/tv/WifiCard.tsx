@@ -1,36 +1,57 @@
 'use client';
 
 import QRCode from 'react-qr-code';
+import { Wifi } from 'lucide-react';
 
 interface Props {
   ssid: string;
-  username: string;
-  password: string;
+  username?: string;
+  password?: string;
 }
 
 export default function WifiCard({ ssid, username, password }: Props) {
-  const wifiString = `WIFI:S:${ssid};T:WPA;P:${password};;`;
+  if (!ssid) {
+    return (
+      <div className="tv-widget-light h-full flex flex-col items-center justify-center opacity-70 tv-focusable" tabIndex={0}>
+         <Wifi className="w-[2vw] h-[2vw] text-slate-400 mb-2" />
+         <span className="text-slate-500 text-[0.8vw] font-medium">WiFi Unconfigured</span>
+      </div>
+    );
+  }
+
+  const wifiString = `WIFI:S:${ssid};T:WPA;P:${password || ''};;`;
 
   return (
-    <div className="tv-widget-light h-full flex gap-[1vw] items-center tv-focusable" tabIndex={0}>
-      <div className="bg-white p-[0.5vw] rounded-xl flex-shrink-0 border border-slate-200 shadow-sm">
-        <QRCode value={wifiString} size={90} level="H" />
+    <div className="h-full flex flex-col rounded-[var(--widget-radius)] overflow-hidden shadow-xl tv-focusable transition-transform hover:scale-[1.02]" tabIndex={0}>
+      {/* Dark Header */}
+      <div className="bg-teal-900/90 backdrop-blur-md px-[1.5vw] py-[0.8vw] flex items-center gap-[0.5vw]">
+         <Wifi className="w-[1.2vw] h-[1.2vw] text-white" strokeWidth={2.5} />
+         <span className="text-white font-semibold tracking-wide text-[1vw]">Wifi Access</span>
       </div>
-      <div className="text-slate-900 flex-1 min-w-0">
-        <p className="text-[0.7vw] font-bold mb-[0.6vh]">📶 WiFi Access</p>
-        <div className="space-y-[0.4vh]">
+      
+      {/* Light Body */}
+      <div className="bg-white/95 backdrop-blur-xl flex-1 flex items-center p-[1vw] gap-[1.5vw]">
+        <div className="rounded-xl overflow-hidden shadow-sm flex-shrink-0 bg-white">
+          <QRCode value={wifiString} size={110} level="M" />
+        </div>
+        
+        <div className="flex flex-col gap-[0.8vw] min-w-0 flex-1">
           <div>
-            <p className="text-slate-500 text-[0.5vw] uppercase tracking-wider font-semibold">SSID</p>
-            <p className="text-slate-900 text-[0.7vw] font-bold">{ssid}</p>
+            <p className="text-slate-500 text-[0.6vw] font-medium tracking-wide">SSID</p>
+            <p className="text-slate-900 text-[1.1vw] font-bold leading-tight truncate">{ssid}</p>
           </div>
-          <div>
-            <p className="text-slate-500 text-[0.5vw] uppercase tracking-wider font-semibold">Username</p>
-            <p className="text-slate-900 text-[0.7vw] font-bold">{username}</p>
-          </div>
-          <div>
-            <p className="text-slate-500 text-[0.5vw] uppercase tracking-wider font-semibold">Password</p>
-            <p className="text-slate-900 text-[0.7vw] font-bold">{password}</p>
-          </div>
+          {username && (
+            <div>
+              <p className="text-slate-500 text-[0.6vw] font-medium tracking-wide">Username</p>
+              <p className="text-slate-900 text-[0.9vw] font-semibold leading-tight truncate">{username}</p>
+            </div>
+          )}
+          {password && (
+            <div>
+              <p className="text-slate-500 text-[0.6vw] font-medium tracking-wide">Password</p>
+              <p className="text-slate-900 text-[1vw] font-bold leading-tight font-mono truncate">{password}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

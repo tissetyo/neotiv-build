@@ -105,15 +105,15 @@ export default function MainDashboardPage({ params }: { params: any }) {
           hotelId: data.hotelId,
           roomCode: data.roomCode || roomCode,
           hotelSlug,
-          guestName: data.guestName || 'Stephen Hawk',
+          guestName: data.guestName || '',
           guestPhotoUrl: data.guestPhotoUrl,
           backgroundUrl: data.backgroundUrl,
           hotelName: data.hotelName || 'Amartha Hotel',
           hotelTimezone: data.hotelTimezone || 'Asia/Jakarta',
           hotelLocation: data.hotelLocation || 'Kuta, Bali',
-          wifiSsid: data.wifiSsid || 'HotelABC',
-          wifiPassword: data.wifiPassword || 'stayinhereforwhile',
-          wifiUsername: data.wifiUsername || 'Guest',
+          wifiSsid: data.wifiSsid || '',
+          wifiPassword: data.wifiPassword || '',
+          wifiUsername: data.wifiUsername || '',
           checkoutDate: data.checkoutDate || null,
           clockTimezones: data.clockTimezones || ['America/New_York', 'Europe/Paris', 'Asia/Shanghai'],
           clockLabels: data.clockLabels || ['New York', 'France', 'China'],
@@ -227,7 +227,9 @@ export default function MainDashboardPage({ params }: { params: any }) {
           backgroundSize: 'cover', 
           backgroundPosition: 'center',
           '--widget-dark-opacity': config.theme?.opacityDark ?? 0.60,
-          '--widget-light-opacity': config.theme?.opacityLight ?? 0.82
+          '--widget-light-opacity': config.theme?.opacityLight ?? 0.82,
+          '--tv-text-color': config.theme?.textColor ?? '#ffffff',
+          color: 'var(--tv-text-color)'
         } as React.CSSProperties}>
 
       {/* ===== BENTO GRID — matches reference layout ===== */}
@@ -302,9 +304,9 @@ export default function MainDashboardPage({ params }: { params: any }) {
                       <img src={app.icon} alt={app.name} className="w-full h-full object-contain" />
                    ) : null}
                 </div>
-                <span className="text-[0.7vw] font-semibold mt-[0.4vh] tracking-wide relative z-10 truncate px-2 w-full text-center">{app.name}</span>
+                <span className="text-[0.7vw] font-semibold mt-[0.4vh] tracking-wide relative z-10 truncate px-2 w-full text-center" style={{ color: 'var(--tv-text-color)' }}>{app.name}</span>
                 {app.subtitle && (
-                  <span className="text-[0.5vw] text-white/40 mt-[0.1vh] relative z-10">{app.subtitle}</span>
+                  <span className="text-[0.5vw] opacity-40 mt-[0.1vh] relative z-10" style={{ color: 'var(--tv-text-color)' }}>{app.subtitle}</span>
                 )}
             </button>
           );

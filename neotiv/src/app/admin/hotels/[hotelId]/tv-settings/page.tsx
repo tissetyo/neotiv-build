@@ -18,7 +18,7 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
   const [activeAppIndex, setActiveAppIndex] = useState<number | null>(null);
 
   const defaultConfig = {
-    theme: { opacityLight: 0.82, opacityDark: 0.60, marqueeText: 'Welcome to our hotel. Enjoy your stay!', marqueeSpeed: 20 },
+    theme: { opacityLight: 0.82, opacityDark: 0.60, marqueeText: 'Welcome to our hotel. Enjoy your stay!', marqueeSpeed: 20, textColor: '#ffffff' },
     apps: [
       { id: "netflix", name: "Netflix", url: "com.netflix.ninja", icon: "/apps/netflix.png" },
       { id: "youtube", name: "YouTube", url: "com.google.android.youtube.tv", icon: "/apps/youtube.png" },
@@ -39,7 +39,8 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
       hotelService: { visible: true },
       hotelInfo: { visible: true },
       alarmWidget: { visible: true },
-      chatWidget: { visible: true }
+      chatWidget: { visible: true },
+      notifWidget: { visible: true }
     }
   };
 
@@ -378,6 +379,18 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
                 <input type="range" min="10" max="120" step="1" value={config.theme.marqueeSpeed || 20}
                   onChange={(e) => setConfig({ ...config, theme: { ...config.theme, marqueeSpeed: parseInt(e.target.value, 10) } })}
                   className="w-full accent-teal-500" />
+              </div>
+
+              <div className="pt-4 border-t border-slate-100">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Global Text Color</label>
+                <div className="flex items-center gap-3">
+                   <input type="color" value={config.theme.textColor || '#ffffff'}
+                     onChange={(e) => setConfig({ ...config, theme: { ...config.theme, textColor: e.target.value } })}
+                     className="w-8 h-8 rounded cursor-pointer p-0 border-0" 
+                     title="Global Text Color" />
+                   <span className="text-sm text-slate-500 font-mono uppercase">{config.theme.textColor || '#ffffff'}</span>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">Applies globally to text elements over the TV background to ensure contrast.</p>
               </div>
 
               <div className="pt-4 border-t border-slate-100">
