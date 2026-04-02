@@ -321,7 +321,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
         )}
 
         {/* ROW 5-7: Notification Card */}
-        {config.layout?.notificationCard?.visible !== false && store.latestNotification && !store.latestNotification.isDismissed && (
+        {config.layout?.notificationCard?.visible !== false && store.latestNotification && !store.latestNotification.is_dismissed && (
           <div className="widget-animate" style={getWidgetStyle('notificationCard', '250ms')}>
             <NotificationCard />
           </div>

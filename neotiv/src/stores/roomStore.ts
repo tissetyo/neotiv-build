@@ -26,6 +26,7 @@ interface RoomState {
   unreadChatCount: number;
   hydrate: (data: Partial<RoomState>) => void;
   setNotification: (n: Notification) => void;
+  dismissNotification: () => void;
   incrementUnreadChat: () => void;
   clearUnreadChat: () => void;
   reset: () => void;
@@ -61,6 +62,9 @@ export const useRoomStore = create<RoomState>()(
       ...initialState,
       hydrate: (data) => set(data),
       setNotification: (n) => set({ latestNotification: n }),
+      dismissNotification: () => set((s) => ({
+        latestNotification: s.latestNotification ? { ...s.latestNotification, is_dismissed: true } : null
+      })),
       incrementUnreadChat: () => set((s) => ({ unreadChatCount: s.unreadChatCount + 1 })),
       clearUnreadChat: () => set({ unreadChatCount: 0 }),
       reset: () => set(initialState),

@@ -69,6 +69,7 @@ export interface Notification {
   title: string;
   body: string | null;
   is_read: boolean;
+  is_dismissed?: boolean;
   created_by: string | null;
   created_at: string;
 }

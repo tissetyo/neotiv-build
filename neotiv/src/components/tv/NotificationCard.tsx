@@ -1,18 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRoomStore } from '@/stores/roomStore';
 
 export default function NotificationCard() {
-  const [dismissed, setDismissed] = useState(false);
   const notification = useRoomStore(s => s.latestNotification);
+  const dismissNotification = useRoomStore(s => s.dismissNotification);
 
-  useEffect(() => {
-    // Reset dismissed state if a new notification arrives
-    if (notification) setDismissed(false);
-  }, [notification]);
-
-  if (dismissed || !notification) {
+  if (!notification || notification.is_dismissed) {
     return (
       <div className="tv-widget-light h-full flex flex-col justify-center items-center text-slate-400">
         <span className="text-[2vw] mb-[1vh]">📭</span>
@@ -29,12 +23,12 @@ export default function NotificationCard() {
   return (
     <div 
       className="tv-widget-light h-full flex flex-col tv-focusable relative group overflow-hidden cursor-pointer" 
-      onClick={() => setDismissed(true)}
+      onClick={() => dismissNotification()}
       tabIndex={0}
       title="Press Enter to dismiss"
     >
       <button
-        onClick={() => setDismissed(true)}
+        onClick={(e) => { e.stopPropagation(); dismissNotification(); }}
         className="absolute top-[0.8vw] right-[0.8vw] w-[1.5vw] h-[1.5vw] flex items-center justify-center rounded-full bg-slate-900/5 hover:bg-slate-900/15 text-slate-500 hover:text-slate-900 transition-all opacity-0 group-focus:opacity-100 group-hover:opacity-100 z-10 text-[0.7vw]"
         aria-label="Dismiss"
       >✕</button>
