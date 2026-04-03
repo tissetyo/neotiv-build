@@ -132,14 +132,24 @@ export default function MainDashboardPage({ params }: { params: any }) {
 
     // NATIVE INTENT DETECTION (Android TV / Set Top Box)
     // If the URL is just a package name (e.g., com.google.android.youtube.tv)
+    // Try to launch the app directly. If not installed, fall back to Play Store.
     if (app.url && !app.url.startsWith('http') && !app.url.startsWith('intent://')) {
-      const intentUrl = `intent://#Intent;package=${app.url};scheme=https;end;`;
+      const pkg = app.url.trim();
+      const intentUrl = `intent://#Intent;package=${pkg};scheme=https;S.browser_fallback_url=https://play.google.com/store/apps/details?id=${pkg};end;`;
       window.location.href = intentUrl;
       return;
     }
     // If it's already a perfectly formatted intent
     if (app.url && app.url.startsWith('intent://')) {
-      window.location.href = app.url;
+      // Ensure it has a Play Store fallback if not already present
+      let intentUrl = app.url;
+      if (!intentUrl.includes('S.browser_fallback_url')) {
+        const pkgMatch = intentUrl.match(/package=([^;]+)/);
+        if (pkgMatch) {
+          intentUrl = intentUrl.replace(';end;', `;S.browser_fallback_url=https://play.google.com/store/apps/details?id=${pkgMatch[1]};end;`);
+        }
+      }
+      window.location.href = intentUrl;
       return;
     }
 
