@@ -61,6 +61,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       clockTimezones: [hotel.clock_timezone_1, hotel.clock_timezone_2, hotel.clock_timezone_3],
       clockLabels: [hotel.clock_label_1, hotel.clock_label_2, hotel.clock_label_3],
       airportCode: hotel.airport_iata_code,
+      hotelFeaturedImageUrl: hotel.featured_image_url || null,
       welcomeMessage: room.custom_welcome_message,
       tvLayoutConfig: hotel.tv_layout_config,
     });

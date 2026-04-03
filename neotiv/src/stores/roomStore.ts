@@ -11,6 +11,7 @@ interface RoomState {
   guestPhotoUrl: string | null;
   backgroundUrl: string | null;
   hotelName: string;
+  hotelFeaturedImageUrl: string | null;
   hotelTimezone: string;
   hotelLocation: string;
   checkoutDate: string | null;
@@ -42,6 +43,7 @@ const initialState = {
   guestPhotoUrl: null,
   backgroundUrl: null,
   hotelName: '',
+  hotelFeaturedImageUrl: null,
   hotelTimezone: 'Asia/Jakarta',
   hotelLocation: '',
   checkoutDate: null,
@@ -78,6 +80,7 @@ export const useRoomStore = create<RoomState>()(
         hotelId: state.hotelId,
         guestName: state.guestName,
         hotelName: state.hotelName,
+        hotelFeaturedImageUrl: state.hotelFeaturedImageUrl,
         hotelTimezone: state.hotelTimezone,
         checkoutDate: state.checkoutDate,
         wifiSsid: state.wifiSsid,

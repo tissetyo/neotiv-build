@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import type { Promo } from '@/types';
+import { Upload, Image as ImageIcon, X } from 'lucide-react';
 
 export default function PromosPage({ params }: { params: Promise<{ hotelSlug: string }> }) {
   const { hotelSlug } = use(params);
@@ -13,6 +14,15 @@ export default function PromosPage({ params }: { params: Promise<{ hotelSlug: st
   const [validFrom, setValidFrom] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [saving, setSaving] = useState(false);
+  const [hotelId, setHotelId] = useState<string | null>(null);
+
+  // Image upload state for create form
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Upload state for existing promo cards
+  const [uploadingPromoId, setUploadingPromoId] = useState<string | null>(null);
 
   useEffect(() => { loadPromos(); }, []);
 
@@ -20,8 +30,36 @@ export default function PromosPage({ params }: { params: Promise<{ hotelSlug: st
     const supabase = createBrowserClient();
     const { data: hotel } = await supabase.from('hotels').select('id').eq('slug', hotelSlug).single();
     if (!hotel) return;
+    setHotelId(hotel.id);
     const { data } = await supabase.from('promos').select('*').eq('hotel_id', hotel.id).order('created_at', { ascending: false });
     setPromos(data || []);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const uploadPromoImage = async (promoId: string, file: File): Promise<string | null> => {
+    if (!hotelId) return null;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('hotel_id', hotelId);
+    formData.append('promo_id', promoId);
+    const res = await fetch('/api/upload/promo-poster', { method: 'POST', body: formData });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.url || null;
   };
 
   const savePromo = async () => {
@@ -30,14 +68,31 @@ export default function PromosPage({ params }: { params: Promise<{ hotelSlug: st
     const supabase = createBrowserClient();
     const { data: hotel } = await supabase.from('hotels').select('id').eq('slug', hotelSlug).single();
     if (!hotel) { setSaving(false); return; }
-    await supabase.from('promos').insert({
+
+    const { data: newPromo } = await supabase.from('promos').insert({
       hotel_id: hotel.id, title, description,
       valid_from: validFrom || null, valid_until: validUntil || null,
-    });
+    }).select().single();
+
+    // Upload image if selected
+    if (newPromo && imageFile) {
+      await uploadPromoImage(newPromo.id, imageFile);
+    }
+
     setTitle(''); setDescription(''); setValidFrom(''); setValidUntil('');
+    clearImage();
     setShowForm(false);
     await loadPromos();
     setSaving(false);
+  };
+
+  const handleCardImageUpload = async (promoId: string, file: File) => {
+    setUploadingPromoId(promoId);
+    const url = await uploadPromoImage(promoId, file);
+    if (url) {
+      setPromos(promos.map(p => p.id === promoId ? { ...p, poster_url: url } : p));
+    }
+    setUploadingPromoId(null);
   };
 
   const toggleActive = async (promo: Promo) => {
@@ -77,7 +132,40 @@ export default function PromosPage({ params }: { params: Promise<{ hotelSlug: st
           </div>
           <div className="mt-3"><label className="block text-sm text-slate-600 mb-1">Description</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm resize-none" style={{ borderColor: 'var(--color-border)' }} /></div>
-          <button onClick={savePromo} disabled={saving} className="mt-3 px-6 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: 'var(--color-teal)' }}>
+
+          {/* Image Upload Section */}
+          <div className="mt-4">
+            <label className="block text-sm text-slate-600 mb-2">Promo Image</label>
+            {imagePreview ? (
+              <div className="relative inline-block">
+                <img src={imagePreview} alt="Preview" className="w-48 h-48 object-cover rounded-xl border" style={{ borderColor: 'var(--color-border)' }} />
+                <button
+                  onClick={clearImage}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl text-sm text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors"
+                style={{ borderColor: 'var(--color-border)' }}
+              >
+                <Upload className="w-4 h-4" />
+                <span>Upload poster image (JPG, PNG, WebP — max 5MB)</span>
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleImageSelect}
+            />
+          </div>
+
+          <button onClick={savePromo} disabled={saving} className="mt-4 px-6 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: 'var(--color-teal)' }}>
             {saving ? 'Saving...' : 'Save Promo'}
           </button>
         </div>
@@ -87,7 +175,49 @@ export default function PromosPage({ params }: { params: Promise<{ hotelSlug: st
         {promos.length === 0 && <p className="col-span-3 text-center py-10 text-slate-400">No promos yet</p>}
         {promos.map(p => (
           <div key={p.id} className="bg-white border rounded-xl overflow-hidden" style={{ borderColor: 'var(--color-border)' }}>
-            {p.poster_url && <img src={p.poster_url} alt={p.title} className="w-full h-40 object-cover" />}
+            {p.poster_url ? (
+              <div className="relative group">
+                <img src={p.poster_url} alt={p.title} className="w-full h-40 object-cover" />
+                <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 cursor-pointer">
+                  <ImageIcon className="w-5 h-5 text-white" />
+                  <span className="text-white text-sm font-medium">Change Image</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleCardImageUpload(p.id, file);
+                    }}
+                  />
+                </label>
+                {uploadingPromoId === p.id && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <label className="w-full h-40 flex flex-col items-center justify-center bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors border-b" style={{ borderColor: 'var(--color-border)' }}>
+                {uploadingPromoId === p.id ? (
+                  <div className="animate-spin w-6 h-6 border-2 border-teal-400 border-t-transparent rounded-full" />
+                ) : (
+                  <>
+                    <Upload className="w-6 h-6 text-slate-300 mb-1" />
+                    <span className="text-xs text-slate-400">Upload Image</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleCardImageUpload(p.id, file);
+                  }}
+                />
+              </label>
+            )}
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-slate-800">{p.title}</h3>

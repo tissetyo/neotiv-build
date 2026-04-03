@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import type { Hotel } from '@/types';
+import { Upload, X, Image as ImageIcon } from 'lucide-react';
 
 export default function HotelSettingsPage({ params }: { params: Promise<{ hotelSlug: string }> }) {
   const { hotelSlug } = use(params);
@@ -12,6 +13,10 @@ export default function HotelSettingsPage({ params }: { params: Promise<{ hotelS
   const [form, setForm] = useState<Partial<Hotel>>({});
   const [announcements, setAnnouncements] = useState<{ id: string; text: string; is_active: boolean }[]>([]);
   const [newAnnouncement, setNewAnnouncement] = useState('');
+
+  // Featured image upload
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const featuredImgRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadHotel(); }, []);
 
@@ -38,6 +43,31 @@ export default function HotelSettingsPage({ params }: { params: Promise<{ hotelS
     await supabase.from('announcements').insert({ hotel_id: hotel.id, text: newAnnouncement });
     setNewAnnouncement('');
     loadHotel();
+  };
+
+  const handleFeaturedImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !hotel) return;
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('hotel_id', hotel.id);
+    const res = await fetch('/api/upload/hotel-featured', { method: 'POST', body: formData });
+    if (res.ok) {
+      const data = await res.json();
+      setForm({ ...form, featured_image_url: data.url });
+      setHotel({ ...hotel, featured_image_url: data.url });
+    }
+    setUploadingImage(false);
+    if (featuredImgRef.current) featuredImgRef.current.value = '';
+  };
+
+  const removeFeaturedImage = async () => {
+    if (!hotel) return;
+    const supabase = createBrowserClient();
+    await supabase.from('hotels').update({ featured_image_url: null }).eq('id', hotel.id);
+    setForm({ ...form, featured_image_url: null });
+    setHotel({ ...hotel, featured_image_url: null });
   };
 
   const tabs = [
@@ -73,6 +103,59 @@ export default function HotelSettingsPage({ params }: { params: Promise<{ hotelS
               <input type="text" value={form.timezone || ''} onChange={e => setForm({...form, timezone: e.target.value})} className={inputClass} style={{ borderColor: 'var(--color-border)' }} /></div>
             <div><label className="block text-sm text-slate-600 mb-1">Airport IATA Code</label>
               <input type="text" value={form.airport_iata_code || ''} onChange={e => setForm({...form, airport_iata_code: e.target.value})} className={inputClass} style={{ borderColor: 'var(--color-border)' }} placeholder="e.g. DPS" /></div>
+
+            {/* Featured Image */}
+            <div className="pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Featured Image</label>
+              <p className="text-xs text-slate-400 mb-3">This image represents your hotel on the TV dashboard and listings.</p>
+
+              {form.featured_image_url ? (
+                <div className="relative inline-block group">
+                  <img
+                    src={form.featured_image_url}
+                    alt="Featured"
+                    className="w-64 h-40 object-cover rounded-xl border shadow-sm"
+                    style={{ borderColor: 'var(--color-border)' }}
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-3">
+                    <button
+                      onClick={() => featuredImgRef.current?.click()}
+                      className="px-3 py-1.5 bg-white/90 text-slate-700 text-xs font-medium rounded-lg hover:bg-white transition-colors"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 inline mr-1" />Change
+                    </button>
+                    <button
+                      onClick={removeFeaturedImage}
+                      className="px-3 py-1.5 bg-red-500/90 text-white text-xs font-medium rounded-lg hover:bg-red-500 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5 inline mr-1" />Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => featuredImgRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl text-sm text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors disabled:opacity-50"
+                  style={{ borderColor: 'var(--color-border)' }}
+                >
+                  {uploadingImage ? (
+                    <div className="animate-spin w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  <span>{uploadingImage ? 'Uploading...' : 'Upload featured image (JPG, PNG, WebP — max 5MB)'}</span>
+                </button>
+              )}
+              <input
+                ref={featuredImgRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleFeaturedImageUpload}
+              />
+            </div>
+
             <button onClick={save} disabled={saving} className="px-6 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: 'var(--color-teal)' }}>
               {saving ? 'Saving...' : 'Save Changes'}
             </button>

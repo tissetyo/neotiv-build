@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { Upload, Image as ImageIcon, X } from 'lucide-react';
 
 interface Hotel {
   id: string;
@@ -11,6 +12,7 @@ interface Hotel {
   location: string | null;
   timezone: string;
   is_active: boolean;
+  featured_image_url: string | null;
   created_at: string;
 }
 
@@ -33,6 +35,10 @@ export default function HotelDetailPage({ params }: { params: Promise<{ hotelId:
   const [serviceCount, setServiceCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Featured image upload
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const featuredImgRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -84,6 +90,28 @@ export default function HotelDetailPage({ params }: { params: Promise<{ hotelId:
     router.push('/admin/hotels');
   };
 
+  const handleFeaturedImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !hotel) return;
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('hotel_id', hotel.id);
+    const res = await fetch('/api/upload/hotel-featured', { method: 'POST', body: formData });
+    if (res.ok) {
+      const data = await res.json();
+      setHotel({ ...hotel, featured_image_url: data.url });
+    }
+    setUploadingImage(false);
+    if (featuredImgRef.current) featuredImgRef.current.value = '';
+  };
+
+  const removeFeaturedImage = async () => {
+    if (!hotel) return;
+    await supabase.from('hotels').update({ featured_image_url: null }).eq('id', hotel.id);
+    setHotel({ ...hotel, featured_image_url: null });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -108,6 +136,58 @@ export default function HotelDetailPage({ params }: { params: Promise<{ hotelId:
         }`}>
           {hotel.is_active ? 'Active' : 'Inactive'}
         </span>
+      </div>
+
+      {/* Featured Image Card */}
+      <div className="bg-white border rounded-xl p-6 mb-6" style={{ borderColor: 'var(--color-border)' }}>
+        <h3 className="font-semibold text-slate-700 mb-1">Featured Image</h3>
+        <p className="text-xs text-slate-400 mb-4">Hotel image displayed on the TV dashboard and listings</p>
+
+        {hotel.featured_image_url ? (
+          <div className="relative inline-block group">
+            <img
+              src={hotel.featured_image_url}
+              alt="Featured"
+              className="w-72 h-44 object-cover rounded-xl border shadow-sm"
+              style={{ borderColor: 'var(--color-border)' }}
+            />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-3">
+              <button
+                onClick={() => featuredImgRef.current?.click()}
+                className="px-3 py-1.5 bg-white/90 text-slate-700 text-xs font-medium rounded-lg hover:bg-white transition-colors"
+              >
+                <ImageIcon className="w-3.5 h-3.5 inline mr-1" />Change
+              </button>
+              <button
+                onClick={removeFeaturedImage}
+                className="px-3 py-1.5 bg-red-500/90 text-white text-xs font-medium rounded-lg hover:bg-red-500 transition-colors"
+              >
+                <X className="w-3.5 h-3.5 inline mr-1" />Remove
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => featuredImgRef.current?.click()}
+            disabled={uploadingImage}
+            className="flex items-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl text-sm text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors disabled:opacity-50"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
+            {uploadingImage ? (
+              <div className="animate-spin w-4 h-4 border-2 border-rose-400 border-t-transparent rounded-full" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            <span>{uploadingImage ? 'Uploading...' : 'Upload featured image (JPG, PNG, WebP — max 5MB)'}</span>
+          </button>
+        )}
+        <input
+          ref={featuredImgRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleFeaturedImageUpload}
+        />
       </div>
 
       {/* Info cards */}

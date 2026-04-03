@@ -12,6 +12,7 @@ interface SessionData {
   guestPhotoUrl: string | null;
   backgroundUrl: string | null;
   hotelName: string;
+  hotelFeaturedImageUrl: string | null;
   hotelTimezone: string;
   hotelLocation: string;
   wifiSsid: string;

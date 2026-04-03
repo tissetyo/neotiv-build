@@ -12,7 +12,7 @@ export default async function MobileHomePage({
 
   const { data: session } = await supabase
     .from('mobile_sessions')
-    .select('*, hotels(name, location, wifi_ssid, wifi_password)')
+    .select('*, hotels(name, location, wifi_ssid, wifi_password, featured_image_url)')
     .eq('id', sessionId)
     .single();
 
@@ -23,17 +23,24 @@ export default async function MobileHomePage({
   return (
     <div className="p-5 space-y-6">
       {/* Welcome Hero */}
-      <div className="bg-slate-900 rounded-[2rem] p-6 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500 rounded-full blur-[80px] opacity-30"></div>
-        <h2 className="text-2xl font-bold mb-1">Welcome back!</h2>
-        <p className="text-slate-400 text-sm mb-6">Your room is connected to the mobile portal.</p>
-        
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-          <p className="text-xs text-slate-300 font-semibold mb-2 uppercase tracking-wider">Hotel Wi-Fi</p>
-          <div className="flex justify-between items-center">
+      <div className="bg-slate-900 rounded-[2rem] p-6 text-white shadow-xl relative overflow-hidden h-48 flex flex-col justify-end">
+        {hotel?.featured_image_url && (
+          <img src={hotel.featured_image_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />
+        )}
+        {!hotel?.featured_image_url && (
+          <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500 rounded-full blur-[80px] opacity-30"></div>
+        )}
+        <div className="relative z-10">
+          <h2 className="text-2xl font-bold mb-1">Welcome back!</h2>
+          <p className="text-slate-300 text-sm mb-4">Your room is connected to the mobile portal.</p>
+          
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/10 flex justify-between items-center">
             <div>
-              <p className="font-semibold text-lg">{hotel?.wifi_ssid || 'No WiFi'}</p>
-              <p className="text-teal-400 font-mono text-sm">{hotel?.wifi_password || 'Ask Front Desk'}</p>
+              <p className="text-[10px] text-slate-300 font-semibold mb-1 uppercase tracking-wider">Hotel Wi-Fi</p>
+              <div className="flex gap-4">
+                <p className="font-semibold text-sm">{hotel?.wifi_ssid || 'No WiFi'}</p>
+                <p className="text-teal-400 font-mono text-sm">{hotel?.wifi_password || 'Ask Front Desk'}</p>
+              </div>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import type { Hotel } from '@/types';
 import Link from 'next/link';
+import { Building2 } from 'lucide-react';
 
 interface CreatedHotel {
   hotel: Hotel;
@@ -226,7 +227,7 @@ export default function AdminHotelsPage() {
       <div className="bg-white border rounded-xl overflow-hidden" style={{ borderColor: 'var(--color-border)' }}>
         <table className="w-full text-sm">
           <thead><tr className="bg-slate-50 text-slate-500">
-            <th className="text-left px-4 py-3 font-medium">Name</th>
+            <th className="text-left px-4 py-3 font-medium">Hotel</th>
             <th className="text-left px-4 py-3 font-medium">Slug</th>
             <th className="text-left px-4 py-3 font-medium">Location</th>
             <th className="text-left px-4 py-3 font-medium">Status</th>
@@ -238,7 +239,18 @@ export default function AdminHotelsPage() {
             {hotels.map(h => (
               <tr key={h.id} className="border-t" style={{ borderColor: 'var(--color-border)' }}>
                 <td className="px-4 py-3 font-medium text-slate-800">
-                  <Link href={`/admin/hotels/${h.id}`} className="hover:text-rose-600 transition-colors">{h.name}</Link>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-8 rounded bg-slate-100 overflow-hidden flex-shrink-0">
+                      {h.featured_image_url ? (
+                        <img src={h.featured_image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                          <Building2 className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+                    <Link href={`/admin/hotels/${h.id}`} className="hover:text-rose-600 transition-colors uppercase font-bold text-xs">{h.name}</Link>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-slate-500">/{h.slug}</td>
                 <td className="px-4 py-3">{h.location || '-'}</td>

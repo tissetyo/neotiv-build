@@ -20,6 +20,7 @@ import AlarmModal from '@/components/tv/AlarmModal';
 import AppLauncher from '@/components/tv/AppLauncher';
 import ServiceRequestModal from '@/components/tv/ServiceRequestModal';
 import ConnectionStatus from '@/components/tv/ConnectionStatus';
+import PromoModal from '@/components/tv/PromoModal';
 import NotificationsModal from '@/components/tv/NotificationsModal';
 import { CheckoutWidget, CheckoutModal } from '@/components/tv/CheckoutReminder';
 import type { AppConfig } from '@/components/tv/AppLauncher';
@@ -109,6 +110,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
           guestPhotoUrl: data.guestPhotoUrl,
           backgroundUrl: data.backgroundUrl,
           hotelName: data.hotelName || 'Amartha Hotel',
+          hotelFeaturedImageUrl: data.hotelFeaturedImageUrl || null,
           hotelTimezone: data.hotelTimezone || 'Asia/Jakarta',
           hotelLocation: data.hotelLocation || 'Kuta, Bali',
           wifiSsid: data.wifiSsid || '',
@@ -272,7 +274,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
         {/* ROW 8-12: Hotel Deals */}
         {config.layout?.hotelDeals?.visible !== false && (
           <div className="widget-animate overflow-hidden" style={getWidgetStyle('hotelDeals', '300ms')}>
-            <HotelDeals />
+            <HotelDeals onOpenPromos={() => setActiveModal('promos')} />
           </div>
         )}
 
@@ -365,7 +367,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
         {/* ROW 11-12: Hotel Info */}
         {config.layout?.hotelInfo?.visible !== false && (
           <div className="widget-animate flex flex-col" style={getWidgetStyle('hotelInfo', '375ms')}>
-            <HotelInfo hotelName={store.hotelName} />
+            <HotelInfo hotelName={store.hotelName} featuredImageUrl={store.hotelFeaturedImageUrl} />
           </div>
         )}
 
@@ -424,6 +426,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
       <CheckoutModal isOpen={activeModal === 'checkout-reminder'} onClose={() => setActiveModal(null)} />
       <AlarmModal isOpen={activeModal === 'alarm'} onClose={() => setActiveModal(null)} />
       <NotificationsModal isOpen={activeModal === 'notif'} onClose={() => setActiveModal(null)} />
+      <PromoModal isOpen={activeModal === 'promos'} onClose={() => setActiveModal(null)} />
       <AppLauncher app={launchApp} isOpen={!!launchApp} onClose={() => setLaunchApp(null)} />
       <ServiceRequestModal
         isOpen={!!requestService}

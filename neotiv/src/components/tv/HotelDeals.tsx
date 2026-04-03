@@ -5,8 +5,13 @@ import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { useRoomStore } from '@/stores/roomStore';
+import { Sparkles } from 'lucide-react';
 
-export default function HotelDeals() {
+interface Props {
+  onOpenPromos?: () => void;
+}
+
+export default function HotelDeals({ onOpenPromos }: Props) {
   const store = useRoomStore();
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -23,28 +28,38 @@ export default function HotelDeals() {
         .order('created_at', { ascending: false });
       return data || [];
     },
-    { refreshInterval: 120000 } // Refresh every 2 mins
+    { refreshInterval: 120000 }
   );
 
   useEffect(() => {
     if (!promos || promos.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % promos.length);
-    }, 6000); // 6 second loop
+    }, 6000);
     return () => clearInterval(interval);
   }, [promos]);
 
+  const hasPromos = promos && promos.length > 0;
+
   return (
-    <div className="tv-widget h-full flex flex-col tv-focusable relative" tabIndex={0}>
+    <div
+      className="tv-widget h-full flex flex-col tv-focusable relative"
+      tabIndex={0}
+      onClick={hasPromos ? onOpenPromos : undefined}
+      style={{ cursor: hasPromos ? 'pointer' : 'default' }}
+    >
       <div className="flex items-center justify-between mb-3 z-10 relative">
         <div className="flex items-center gap-2">
           <span className="text-[1.2vw]">✨</span>
           <span className="text-white text-[1vw] font-semibold">Hotel Deals</span>
         </div>
+        {hasPromos && (
+          <span className="text-white/50 text-[0.7vw]">→</span>
+        )}
       </div>
       <div className="flex-1 overflow-hidden rounded-xl relative">
         <AnimatePresence mode="wait">
-          {promos && promos.length > 0 ? (
+          {hasPromos ? (
             <motion.img
               key={currentIndex}
               src={promos[currentIndex].poster_url}
@@ -56,17 +71,25 @@ export default function HotelDeals() {
               className="w-full h-full object-cover rounded-xl absolute inset-0"
             />
           ) : (
-            <img src="/promo.png" alt="Placeholder" className="w-full h-full object-cover rounded-xl absolute inset-0" />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="w-full h-full absolute inset-0 rounded-xl flex flex-col items-center justify-center"
+              style={{ background: 'rgba(255,255,255,0.06)' }}
+            >
+              <Sparkles className="w-[2vw] h-[2vw] text-white/20 mb-[0.5vh]" />
+              <span className="text-white/30 text-[0.8vw] font-medium">No deals available</span>
+            </motion.div>
           )}
         </AnimatePresence>
-        
+
         {/* Indicators */}
-        {promos && promos.length > 1 && (
+        {hasPromos && promos.length > 1 && (
           <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
-            {promos.map((_, idx) => (
-              <div 
-                key={idx} 
-                className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`} 
+            {promos.map((_: any, idx: number) => (
+              <div
+                key={idx}
+                className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`}
               />
             ))}
           </div>
