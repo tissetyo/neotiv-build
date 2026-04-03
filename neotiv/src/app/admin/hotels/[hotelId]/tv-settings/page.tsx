@@ -489,12 +489,14 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
               {config.apps.map((app: any, idx: number) => (
                 <div key={idx} className="p-4 border border-slate-200 rounded-lg bg-slate-50 relative group">
                   <button type="button" onClick={() => {
-                    const removedAppId = config.apps[idx]?.id;
-                    const newApps = [...config.apps];
-                    newApps.splice(idx, 1);
-                    const newLayout = { ...config.layout };
-                    if (removedAppId) delete newLayout[`app-${removedAppId}`];
-                    setConfig((prev: any) => ({ ...prev, apps: newApps, layout: newLayout }));
+                    setConfig((prev: any) => {
+                      const removedAppId = prev.apps[idx]?.id;
+                      const newApps = [...prev.apps];
+                      newApps.splice(idx, 1);
+                      const newLayout = { ...prev.layout };
+                      if (removedAppId) delete newLayout[`app-${removedAppId}`];
+                      return { ...prev, apps: newApps, layout: newLayout };
+                    });
                   }} className="absolute top-2 right-2 text-slate-300 hover:text-red-500 text-lg leading-none font-bold opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
                   
                   <div className="flex gap-4 items-start">

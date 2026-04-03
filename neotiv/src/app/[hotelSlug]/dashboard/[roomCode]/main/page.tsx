@@ -40,15 +40,13 @@ export default function MainDashboardPage({ params }: { params: any }) {
 
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [launchApp, setLaunchApp] = useState<AppConfig | null>(null);
-  const [requestService, setRequestService] = useState<{ id: string; name: string; icon: string | null } | null>(null);
 
   const handleEscape = useCallback(() => {
     setActiveModal(null);
     setLaunchApp(null);
-    setRequestService(null);
   }, []);
 
-  useDpadNavigation({ enabled: mounted && !activeModal && !launchApp && !requestService, onEscape: handleEscape });
+  useDpadNavigation({ enabled: mounted && !activeModal && !launchApp, onEscape: handleEscape });
 
   const { data: liveConfig } = useSWR(
     mounted ? `/api/hotel/${hotelSlug}/tv-config` : null,
@@ -162,7 +160,6 @@ export default function MainDashboardPage({ params }: { params: any }) {
       icon: typeof app.icon === 'string' ? app.icon : '' 
     });
   }, []);
-  const handleServiceRequest = useCallback((service: { id: string; name: string; icon: string | null }) => { setRequestService(service); }, []);
 
   const isCheckoutDay = store.checkoutDate 
     ? new Date(`${store.checkoutDate}T00:00:00`).toDateString() === new Date().toDateString() 
@@ -360,7 +357,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
         {/* ROW 8-10: Hotel Service */}
         {config.layout?.hotelService?.visible !== false && (
           <div className="widget-animate flex flex-col" style={getWidgetStyle('hotelService', '350ms')}>
-            <HotelService onRequestService={handleServiceRequest} />
+            <HotelService onOpenServices={() => setActiveModal('services')} />
           </div>
         )}
 
@@ -429,10 +426,9 @@ export default function MainDashboardPage({ params }: { params: any }) {
       <PromoModal isOpen={activeModal === 'promos'} onClose={() => setActiveModal(null)} />
       <AppLauncher app={launchApp} isOpen={!!launchApp} onClose={() => setLaunchApp(null)} />
       <ServiceRequestModal
-        isOpen={!!requestService}
-        onClose={() => setRequestService(null)}
+        isOpen={activeModal === 'services'}
+        onClose={() => setActiveModal(null)}
         onOrderComplete={() => setActiveModal('chat')}
-        service={requestService}
       />
       <ConnectionStatus />
     </div>
