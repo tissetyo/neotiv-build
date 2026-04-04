@@ -257,3 +257,9 @@
 .tv-kiosk-mode * {
   cursor: none !important;
 } */
+
+/* Lock Android text zooming out */
+.tv-kiosk-mode {
+  text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+}

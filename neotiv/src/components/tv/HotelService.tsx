@@ -53,7 +53,13 @@ export default function HotelService({ onOpenServices }: Props) {
     { refreshInterval: 120000 }
   );
 
-  // NO auto-rotate — user navigates manually via D-pad or click
+  useEffect(() => {
+    if (!services || services.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % services.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [services]);
 
   const currentService = services?.[currentIndex];
 
