@@ -142,50 +142,43 @@ export function useDpadNavigation(options?: {
       const activeElement = document.activeElement as HTMLElement;
       const currentFocused = elements.includes(activeElement) ? activeElement : null;
 
-      switch (e.key) {
-        case 'ArrowUp':
-        case 'ArrowDown':
-        case 'ArrowLeft':
-        case 'ArrowRight': {
+      const isUp = e.key === 'ArrowUp' || e.key === 'Up' || e.keyCode === 38 || e.keyCode === 19;
+      const isDown = e.key === 'ArrowDown' || e.key === 'Down' || e.keyCode === 40 || e.keyCode === 20;
+      const isLeft = e.key === 'ArrowLeft' || e.key === 'Left' || e.keyCode === 37 || e.keyCode === 21;
+      const isRight = e.key === 'ArrowRight' || e.key === 'Right' || e.keyCode === 39 || e.keyCode === 22;
+      const isEnter = e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 66 || e.keyCode === 23;
+      const isEscape = e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27 || e.keyCode === 4; // 4 is Android Back button
+
+      if (isUp || isDown || isLeft || isRight) {
+        e.preventDefault();
+
+        if (!currentFocused) {
+          // No element focused yet → focus first
+          elements[0]?.focus();
+          currentIndexRef.current = 0;
+          return;
+        }
+
+        let direction: 'up' | 'down' | 'left' | 'right' = 'up';
+        if (isDown) direction = 'down';
+        if (isLeft) direction = 'left';
+        if (isRight) direction = 'right';
+
+        const next = findNearest(currentFocused, direction, elements);
+        if (next) {
+          next.focus();
+          currentIndexRef.current = elements.indexOf(next);
+          // Scroll into view if needed (for scrollable containers)
+          next.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        }
+      } else if (isEnter) {
+        if (currentFocused) {
           e.preventDefault();
-
-          if (!currentFocused) {
-            // No element focused yet → focus first
-            elements[0]?.focus();
-            currentIndexRef.current = 0;
-            return;
-          }
-
-          const directionMap: Record<string, 'up' | 'down' | 'left' | 'right'> = {
-            ArrowUp: 'up',
-            ArrowDown: 'down',
-            ArrowLeft: 'left',
-            ArrowRight: 'right',
-          };
-
-          const next = findNearest(currentFocused, directionMap[e.key], elements);
-          if (next) {
-            next.focus();
-            currentIndexRef.current = elements.indexOf(next);
-            // Scroll into view if needed (for scrollable containers)
-            next.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-          }
-          break;
+          currentFocused.click();
         }
-
-        case 'Enter': {
-          if (currentFocused) {
-            e.preventDefault();
-            currentFocused.click();
-          }
-          break;
-        }
-
-        case 'Escape': {
-          e.preventDefault();
-          onEscape?.();
-          break;
-        }
+      } else if (isEscape) {
+        e.preventDefault();
+        onEscape?.();
       }
     },
     [enabled, getFocusableElements, findNearest, onEscape]
