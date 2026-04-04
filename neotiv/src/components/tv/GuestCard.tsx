@@ -4,12 +4,13 @@ interface Props {
   guestName: string;
   guestPhotoUrl: string | null;
   roomCode: string;
+  onClick?: () => void;
 }
 
-export default function GuestCard({ guestName, guestPhotoUrl, roomCode }: Props) {
+export default function GuestCard({ guestName, guestPhotoUrl, roomCode, onClick }: Props) {
   if (!guestName) {
     return (
-      <div className="tv-widget-light h-full flex flex-col items-center justify-center tv-focusable" tabIndex={0}>
+      <div className="tv-widget-light h-full flex flex-col items-center justify-center tv-focusable cursor-pointer" tabIndex={0} onClick={onClick}>
         <span className="text-slate-500 text-[1.2vw] font-bold mb-[0.5vh]">Room {roomCode}</span>
         <span className="text-slate-400 text-[0.6vw] tracking-wider uppercase font-semibold">Vacant</span>
       </div>
@@ -19,7 +20,7 @@ export default function GuestCard({ guestName, guestPhotoUrl, roomCode }: Props)
   // The Reference mockup displays:
   // [Hello]  [guest photo overlapping a text pane] | [Room 417]
   return (
-    <div className="h-full flex items-center justify-between tv-focusable tv-widget-transparent bg-transparent pl-4 pr-6 py-2" tabIndex={0}>
+    <div className="h-full flex items-center justify-between tv-focusable tv-widget-transparent bg-transparent pl-4 pr-6 py-2 cursor-pointer" tabIndex={0} onClick={onClick}>
       <div className="flex items-center">
          <div className="flex flex-col justify-center items-end mr-[1vw]">
             <span className="text-white text-[1.1vw] font-medium leading-none">Hello</span>

@@ -23,6 +23,7 @@ import ConnectionStatus from '@/components/tv/ConnectionStatus';
 import PromoModal from '@/components/tv/PromoModal';
 import NotificationsModal from '@/components/tv/NotificationsModal';
 import DisplaySettingsModal from '@/components/tv/DisplaySettingsModal';
+import GuestLogoutModal from '@/components/tv/GuestLogoutModal';
 import { CheckoutWidget, CheckoutModal } from '@/components/tv/CheckoutReminder';
 import type { AppConfig } from '@/components/tv/AppLauncher';
 import { AlarmClock, MessageCircle, Bell, SlidersHorizontal } from 'lucide-react';
@@ -405,7 +406,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
              {isCheckoutDay ? (
                <CheckoutWidget onOpenModal={() => setActiveModal('checkout-reminder')} />
              ) : (
-               <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} />
+               <GuestCard guestName={store.guestName} guestPhotoUrl={store.guestPhotoUrl} roomCode={roomCode} onClick={() => setActiveModal('logout')} />
              )}
           </div>
         )}
@@ -510,6 +511,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
       <AlarmModal isOpen={activeModal === 'alarm'} onClose={() => setActiveModal(null)} />
       <NotificationsModal isOpen={activeModal === 'notif'} onClose={() => setActiveModal(null)} />
       <PromoModal isOpen={activeModal === 'promos'} onClose={() => setActiveModal(null)} />
+      <GuestLogoutModal isOpen={activeModal === 'logout'} onClose={() => setActiveModal(null)} />
       <AppLauncher app={launchApp} isOpen={!!launchApp} onClose={() => setLaunchApp(null)} />
       <ServiceRequestModal
         isOpen={activeModal === 'services'}
