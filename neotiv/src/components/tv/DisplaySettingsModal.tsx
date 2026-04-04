@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRoomStore } from '@/stores/roomStore';
 import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
-import { SlidersHorizontal, Sun, Contrast, Palette, RotateCcw, X } from 'lucide-react';
+import { SlidersHorizontal, Sun, Contrast, Palette, RotateCcw, X, Maximize } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -19,6 +19,7 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
   const [brightness, setBrightness] = useState(config.theme?.brightness ?? 1);
   const [contrast, setContrast] = useState(config.theme?.contrast ?? 1);
   const [saturate, setSaturate] = useState(config.theme?.saturate ?? 1);
+  const [scale, setScale] = useState(config.theme?.scale ?? 1);
 
   const [isAdjusting, setIsAdjusting] = useState(false);
   const adjustTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -31,6 +32,7 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
       setBrightness(config.theme?.brightness ?? 1);
       setContrast(config.theme?.contrast ?? 1);
       setSaturate(config.theme?.saturate ?? 1);
+      setScale(config.theme?.scale ?? 1);
     }
   }, [isOpen]);
 
@@ -43,36 +45,47 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
         brightness: b,
         contrast: c,
         saturate: s,
+        scale: Math.round(scale * 100) / 100, // Pass current scale
       },
     };
     hydrate({ tvLayoutConfig: updatedConfig });
-  }, [config, hydrate]);
+  }, [config, hydrate, scale]);
 
-  const handleChange = useCallback((type: 'brightness' | 'contrast' | 'saturate', value: number) => {
+  const handleChange = useCallback((type: 'brightness' | 'contrast' | 'saturate' | 'scale', value: number) => {
     const clamped = Math.round(value * 100) / 100;
-    let b = brightness, c = contrast, s = saturate;
+    let b = brightness, c = contrast, s = saturate, zoom = scale;
     if (type === 'brightness') { b = clamped; setBrightness(clamped); }
     if (type === 'contrast') { c = clamped; setContrast(clamped); }
     if (type === 'saturate') { s = clamped; setSaturate(clamped); }
+    if (type === 'scale') { zoom = clamped; setScale(clamped); }
     
     // Live preview
-    previewSettings(b, c, s);
+    const updatedConfig = {
+      ...config,
+      theme: { ...config.theme, brightness: b, contrast: c, saturate: s, scale: zoom },
+    };
+    hydrate({ tvLayoutConfig: updatedConfig });
 
     // Fade out backdrop
     setIsAdjusting(true);
     if (adjustTimeoutRef.current) clearTimeout(adjustTimeoutRef.current);
     adjustTimeoutRef.current = setTimeout(() => setIsAdjusting(false), 800);
-  }, [brightness, contrast, saturate, previewSettings]);
+  }, [brightness, contrast, saturate, scale, config, hydrate]);
 
   const handleReset = useCallback(() => {
     setBrightness(1);
     setContrast(1);
     setSaturate(1);
-    previewSettings(1, 1, 1);
+    setScale(1);
+    const updatedConfig = {
+      ...config,
+      theme: { ...config.theme, brightness: 1, contrast: 1, saturate: 1, scale: 1 },
+    };
+    hydrate({ tvLayoutConfig: updatedConfig });
     setIsAdjusting(true);
     if (adjustTimeoutRef.current) clearTimeout(adjustTimeoutRef.current);
     adjustTimeoutRef.current = setTimeout(() => setIsAdjusting(false), 800);
-  }, [previewSettings]);
+  }, [config, hydrate]);
 
   const handleApply = useCallback(() => {
     onClose();
@@ -84,6 +97,7 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
     { label: 'Brightness', icon: <Sun className="w-[1.2vw] h-[1.2vw]" />, value: brightness, type: 'brightness' as const, min: 0.5, max: 1.5, step: 0.05 },
     { label: 'Contrast', icon: <Contrast className="w-[1.2vw] h-[1.2vw]" />, value: contrast, type: 'contrast' as const, min: 0.5, max: 1.5, step: 0.05 },
     { label: 'Saturation', icon: <Palette className="w-[1.2vw] h-[1.2vw]" />, value: saturate, type: 'saturate' as const, min: 0.0, max: 2.0, step: 0.05 },
+    { label: 'Zoom (Ratio)', icon: <Maximize className="w-[1.2vw] h-[1.2vw]" />, value: scale, type: 'scale' as const, min: 0.8, max: 1.2, step: 0.02 },
   ];
 
   return (

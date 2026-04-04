@@ -251,9 +251,9 @@
 }
 
 /* ═══════════════════════════════════════════
-   KIOSK MODE — Hide cursor on TV dashboard
+   KIOSK MODE — Hide cursor on TV dashboard (Disabled for now to allow logout)
    ═══════════════════════════════════════════ */
-.tv-kiosk-mode,
+/* .tv-kiosk-mode,
 .tv-kiosk-mode * {
   cursor: none !important;
-}
+} */

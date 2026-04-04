@@ -33,7 +33,7 @@ export default function RoomDashboardPage({ params }: { params: Promise<{ hotelS
   const [countdown, setCountdown] = useState(5);
   const router = useRouter();
 
-  // Check existing session
+  // Check existing session and sync fresh data
   useEffect(() => {
     const stored = localStorage.getItem(`neotiv_room_${hotelSlug}_${roomCode}`);
     if (stored) {
@@ -41,6 +41,26 @@ export default function RoomDashboardPage({ params }: { params: Promise<{ hotelS
         const data = JSON.parse(stored);
         setSession(data);
         setScreen('welcome');
+
+        // Background sync latest guest data
+        if (data.roomId) {
+          fetch(`/api/room/${data.roomId}/status?hotelId=${data.hotelId || ''}`)
+            .then(res => res.json())
+            .then(status => {
+              if (status && status.roomDetails) {
+                const updatedSession = { ...data, 
+                  guestName: status.roomDetails.guest_name,
+                  welcomeMessage: status.roomDetails.custom_welcome_message,
+                  guestPhotoUrl: status.roomDetails.guest_photo_url,
+                  checkoutDate: status.roomDetails.checkout_date,
+                  roomCode: status.roomDetails.room_code || data.roomCode
+                };
+                setSession(updatedSession);
+                localStorage.setItem(`neotiv_room_${hotelSlug}_${roomCode}`, JSON.stringify(updatedSession));
+              }
+            })
+            .catch(err => console.error("Sync error:", err));
+        }
       } catch { /* invalid session */ }
     }
   }, [hotelSlug, roomCode]);

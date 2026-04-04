@@ -34,12 +34,19 @@ export async function GET(
     } else {
       notificationQuery = notificationQuery.eq('room_id', roomId);
     }
-
     const { data: notifications } = await notificationQuery;
+
+    // 3. Get Room Details (For background syncing Guest Name / Welcome Message)
+    const { data: room } = await supabase
+      .from('rooms')
+      .select('guest_name, guest_photo_url, custom_welcome_message, checkout_date, room_code')
+      .eq('id', roomId)
+      .single();
 
     return NextResponse.json({
       unreadChatCount: unreadChats || 0,
-      latestNotification: notifications?.[0] || null
+      latestNotification: notifications?.[0] || null,
+      roomDetails: room || null
     });
   } catch (error: any) {
     console.error('Room Status API Error:', error);

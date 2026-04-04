@@ -109,8 +109,31 @@ export default function MainDashboardPage({ params }: { params: any }) {
       if (liveStatus.latestNotification?.id !== store.latestNotification?.id) {
         store.setNotification(liveStatus.latestNotification);
       }
+      if (liveStatus.roomDetails) {
+        let hasChanges = false;
+        const updates: any = {};
+        if (liveStatus.roomDetails.guest_name !== store.guestName) { updates.guestName = liveStatus.roomDetails.guest_name; hasChanges = true; }
+        if (liveStatus.roomDetails.guest_photo_url !== store.guestPhotoUrl) { updates.guestPhotoUrl = liveStatus.roomDetails.guest_photo_url; hasChanges = true; }
+        if (liveStatus.roomDetails.checkout_date !== store.checkoutDate) { updates.checkoutDate = liveStatus.roomDetails.checkout_date; hasChanges = true; }
+        
+        if (hasChanges) {
+          hydrate(updates);
+          const stored = localStorage.getItem(`neotiv_room_${hotelSlug}_${roomCode}`);
+          if (stored) {
+            try {
+              const data = JSON.parse(stored);
+              // Also sync roomCode if changed (can't change route instantly safely, but we can update data)
+              const updatedSession = { ...data, ...updates, 
+                roomCode: liveStatus.roomDetails.room_code || data.roomCode,
+                welcomeMessage: liveStatus.roomDetails.custom_welcome_message 
+              };
+              localStorage.setItem(`neotiv_room_${hotelSlug}_${roomCode}`, JSON.stringify(updatedSession));
+            } catch {}
+          }
+        }
+      }
     }
-  }, [liveStatus]);
+  }, [liveStatus, hydrate, hotelSlug, roomCode, store.guestName, store.guestPhotoUrl, store.checkoutDate]);
 
   useEffect(() => {
     const stored = localStorage.getItem(`neotiv_room_${hotelSlug}_${roomCode}`);
@@ -260,6 +283,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
   const brightness = config.theme?.brightness ?? 1;
   const contrast = config.theme?.contrast ?? 1;
   const saturate = config.theme?.saturate ?? 1;
+  const scale = config.theme?.scale ?? 1;
   const displayFilter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
 
   return (
@@ -282,6 +306,10 @@ export default function MainDashboardPage({ params }: { params: any }) {
           transition: 'filter 0.3s ease-in-out'
         }} 
       />
+
+      {/* ===== SCALABLE CONTENT WRAPPER FOR OVERSCAN/RATIO CONTROL ===== */}
+      <div className="absolute inset-0 transition-transform duration-300 pointer-events-none" style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}>
+        <div className="w-full h-full relative pointer-events-auto">
 
       {/* ===== BENTO GRID — matches reference layout ===== */}
       <div className="absolute inset-0 grid gap-[0.6vw]" style={{
@@ -469,6 +497,9 @@ export default function MainDashboardPage({ params }: { params: any }) {
       <div className="absolute bottom-0 left-0 right-0 h-[2.2vw] z-10 flex items-center widget-animate"
         style={{ animationDelay: '700ms', background: 'rgba(15, 23, 42, 0.75)' }}>
         <MarqueeBar />
+      </div>
+
+        </div>
       </div>
 
       {/* Modals */}
