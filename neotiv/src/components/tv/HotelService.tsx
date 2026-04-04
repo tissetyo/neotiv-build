@@ -11,19 +11,25 @@ import {
 } from 'lucide-react';
 import type { Service } from '@/types';
 
-const ICON_MAP: Record<string, React.ReactNode> = {
-  Utensils: <Utensils className="w-[2vw] h-[2vw]" />,
-  Car: <Car className="w-[2vw] h-[2vw]" />,
-  Shirt: <Shirt className="w-[2vw] h-[2vw]" />,
-  Coffee: <Coffee className="w-[2vw] h-[2vw]" />,
-  Sparkles: <Sparkles className="w-[2vw] h-[2vw]" />,
-  Scissors: <Scissors className="w-[2vw] h-[2vw]" />,
-  ShoppingBag: <ShoppingBag className="w-[2vw] h-[2vw]" />,
-  Map: <Map className="w-[2vw] h-[2vw]" />,
-  Briefcase: <Briefcase className="w-[2vw] h-[2vw]" />,
-  Bell: <Bell className="w-[2vw] h-[2vw]" />,
-  ConciergeBell: <ConciergeBell className="w-[2vw] h-[2vw]" />,
+// Match the icon mapping used in admin/frontoffice settings/services
+const ICONS: Record<string, React.ReactNode> = {
+  Utensils: <Utensils className="w-[1.8vw] h-[1.8vw]" />,
+  Car: <Car className="w-[1.8vw] h-[1.8vw]" />,
+  Shirt: <Shirt className="w-[1.8vw] h-[1.8vw]" />,
+  Coffee: <Coffee className="w-[1.8vw] h-[1.8vw]" />,
+  Sparkles: <Sparkles className="w-[1.8vw] h-[1.8vw]" />,
+  Scissors: <Scissors className="w-[1.8vw] h-[1.8vw]" />,
+  ShoppingBag: <ShoppingBag className="w-[1.8vw] h-[1.8vw]" />,
+  Map: <Map className="w-[1.8vw] h-[1.8vw]" />,
+  Briefcase: <Briefcase className="w-[1.8vw] h-[1.8vw]" />,
+  Bell: <Bell className="w-[1.8vw] h-[1.8vw]" />,
 };
+
+/** Render the icon — tries Lucide map first, falls back to raw text (emoji) */
+function renderIcon(icon: string | null | undefined) {
+  if (!icon) return <ConciergeBell className="w-[1.8vw] h-[1.8vw]" />;
+  return ICONS[icon] || <span className="text-[1.8vw] leading-none">{icon}</span>;
+}
 
 interface Props {
   onOpenServices?: () => void;
@@ -47,14 +53,7 @@ export default function HotelService({ onOpenServices }: Props) {
     { refreshInterval: 120000 }
   );
 
-  // Auto-rotate through service icons every 4 seconds
-  useEffect(() => {
-    if (!services || services.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % services.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [services]);
+  // NO auto-rotate — user navigates manually via D-pad or click
 
   const currentService = services?.[currentIndex];
 
@@ -64,7 +63,7 @@ export default function HotelService({ onOpenServices }: Props) {
       tabIndex={0}
       onClick={onOpenServices}
     >
-      {/* Rotating icon */}
+      {/* Rotating icon — manual only */}
       <div className="w-[3.5vw] h-[3.5vw] rounded-full bg-slate-900/5 group-hover:bg-teal-500/10 flex items-center justify-center transition-colors mb-2">
         <AnimatePresence mode="wait">
           {currentService ? (
@@ -76,17 +75,17 @@ export default function HotelService({ onOpenServices }: Props) {
               transition={{ duration: 0.3 }}
               className="text-slate-800"
             >
-              {ICON_MAP[currentService.icon || ''] || <ConciergeBell className="w-[2vw] h-[2vw]" />}
+              {renderIcon(currentService.icon)}
             </motion.div>
           ) : (
-            <ConciergeBell className="w-[2vw] h-[2vw] text-slate-800" />
+            <ConciergeBell className="w-[1.8vw] h-[1.8vw] text-slate-800" strokeWidth={2} />
           )}
         </AnimatePresence>
       </div>
 
       <span className="text-slate-900 text-[0.8vw] font-bold tracking-wide">Hotel Services</span>
 
-      {/* Dot indicators */}
+      {/* Dot indicators — shows selected state */}
       {services && services.length > 1 && (
         <div className="flex gap-[0.2vw] mt-[0.4vh]">
           {services.map((_: any, idx: number) => (
@@ -94,8 +93,8 @@ export default function HotelService({ onOpenServices }: Props) {
               key={idx}
               className={`rounded-full transition-all duration-300 ${
                 idx === currentIndex
-                  ? 'w-[0.6vw] h-[0.15vw] bg-slate-700'
-                  : 'w-[0.15vw] h-[0.15vw] bg-slate-300'
+                  ? 'w-[0.6vw] h-[0.2vw] bg-teal-600'
+                  : 'w-[0.2vw] h-[0.2vw] bg-slate-300'
               }`}
             />
           ))}

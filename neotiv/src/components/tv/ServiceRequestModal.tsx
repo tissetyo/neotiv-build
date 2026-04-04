@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
@@ -12,21 +12,21 @@ import {
 } from 'lucide-react';
 import type { Service, ServiceOption } from '@/types';
 
-const ICON_MAP: Record<string, React.ReactNode> = {
-  Utensils: <Utensils className="w-8 h-8" />,
-  Car: <Car className="w-8 h-8" />,
-  Shirt: <Shirt className="w-8 h-8" />,
-  Coffee: <Coffee className="w-8 h-8" />,
-  Sparkles: <Sparkles className="w-8 h-8" />,
-  Scissors: <Scissors className="w-8 h-8" />,
-  ShoppingBag: <ShoppingBag className="w-8 h-8" />,
-  Map: <Map className="w-8 h-8" />,
-  Briefcase: <Briefcase className="w-8 h-8" />,
-  Bell: <Bell className="w-8 h-8" />,
-  ConciergeBell: <ConciergeBell className="w-8 h-8" />,
+// Match admin/frontoffice icon mapping exactly
+const ICONS: Record<string, React.ReactNode> = {
+  Utensils: <Utensils className="w-5 h-5" />,
+  Car: <Car className="w-5 h-5" />,
+  Shirt: <Shirt className="w-5 h-5" />,
+  Coffee: <Coffee className="w-5 h-5" />,
+  Sparkles: <Sparkles className="w-5 h-5" />,
+  Scissors: <Scissors className="w-5 h-5" />,
+  ShoppingBag: <ShoppingBag className="w-5 h-5" />,
+  Map: <Map className="w-5 h-5" />,
+  Briefcase: <Briefcase className="w-5 h-5" />,
+  Bell: <Bell className="w-5 h-5" />,
 };
 
-const LARGE_ICON: Record<string, React.ReactNode> = {
+const LARGE_ICONS: Record<string, React.ReactNode> = {
   Utensils: <Utensils className="w-16 h-16" />,
   Car: <Car className="w-16 h-16" />,
   Shirt: <Shirt className="w-16 h-16" />,
@@ -37,8 +37,27 @@ const LARGE_ICON: Record<string, React.ReactNode> = {
   Map: <Map className="w-16 h-16" />,
   Briefcase: <Briefcase className="w-16 h-16" />,
   Bell: <Bell className="w-16 h-16" />,
-  ConciergeBell: <ConciergeBell className="w-16 h-16" />,
 };
+
+const MED_ICONS: Record<string, React.ReactNode> = {
+  Utensils: <Utensils className="w-8 h-8" />,
+  Car: <Car className="w-8 h-8" />,
+  Shirt: <Shirt className="w-8 h-8" />,
+  Coffee: <Coffee className="w-8 h-8" />,
+  Sparkles: <Sparkles className="w-8 h-8" />,
+  Scissors: <Scissors className="w-8 h-8" />,
+  ShoppingBag: <ShoppingBag className="w-8 h-8" />,
+  Map: <Map className="w-8 h-8" />,
+  Briefcase: <Briefcase className="w-8 h-8" />,
+  Bell: <Bell className="w-8 h-8" />,
+};
+
+/** Render icon — tries Lucide map first, falls back to raw text (emoji) */
+function renderIcon(icon: string | null | undefined, size: 'sm' | 'md' | 'lg' = 'sm') {
+  if (!icon) return <ConciergeBell className={size === 'lg' ? 'w-16 h-16' : size === 'md' ? 'w-8 h-8' : 'w-5 h-5'} />;
+  const map = size === 'lg' ? LARGE_ICONS : size === 'md' ? MED_ICONS : ICONS;
+  return map[icon] || <span className={size === 'lg' ? 'text-6xl' : size === 'md' ? 'text-3xl' : 'text-xl'}>{icon}</span>;
+}
 
 interface CartItem {
   option: ServiceOption;
@@ -64,9 +83,8 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const autoSlideRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Reset state when modal opens/closes
+  // Reset state on open/close
   useEffect(() => {
     if (!isOpen) {
       setStep('carousel');
@@ -114,19 +132,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
     }
   );
 
-  // Auto-slideshow every 5 seconds in carousel step
-  useEffect(() => {
-    if (step !== 'carousel' || !categories.length || categories.length <= 2) {
-      if (autoSlideRef.current) clearInterval(autoSlideRef.current);
-      return;
-    }
-    autoSlideRef.current = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % categories.length);
-    }, 5000);
-    return () => {
-      if (autoSlideRef.current) clearInterval(autoSlideRef.current);
-    };
-  }, [step, categories]);
+  // NO auto-slideshow — user navigates manually
 
   // Keyboard navigation
   useEffect(() => {
@@ -271,7 +277,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                       <QRCode value={qrUrl} size={200} />
                     </div>
                   ) : null}
-                  <button onClick={() => setShowQr(false)} className="mt-6 px-8 py-3 rounded-xl font-semibold text-white tv-focusable" style={{ background: 'var(--color-teal)' }} tabIndex={0}>
+                  <button onClick={() => setShowQr(false)} className="mt-6 px-8 py-3 rounded-xl font-semibold text-white tv-focusable block mx-auto" style={{ background: 'var(--color-teal)' }} tabIndex={0}>
                     Close
                   </button>
                 </motion.div>
@@ -296,8 +302,8 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                     <ArrowLeft className="w-[1vw] h-[1vw] text-white/70" />
                   </button>
                 )}
-                <div className="w-[2.5vw] h-[2.5vw] rounded-xl bg-white/10 flex items-center justify-center">
-                  <ConciergeBell className="w-[1.3vw] h-[1.3vw] text-white/80" />
+                <div className="w-[2.5vw] h-[2.5vw] rounded-xl bg-white/10 flex items-center justify-center text-white/80">
+                  {step === 'items' && selectedService ? renderIcon(selectedService.icon, 'sm') : <ConciergeBell className="w-[1.3vw] h-[1.3vw]" />}
                 </div>
                 <h2 className="text-white text-[1.4vw] font-bold tracking-tight">
                   {step === 'carousel' ? 'Hotel Services' : step === 'items' ? selectedService?.name || 'Services' : 'Order Confirmation'}
@@ -407,26 +413,38 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                                   }
                                 }}
                               >
-                                {/* Card face */}
+                                {/* Card face — with selected border on center card */}
                                 <div
                                   className="w-full h-full flex flex-col items-center justify-center gap-[2vh]"
                                   style={{
-                                    background: 'linear-gradient(135deg, rgba(20,184,166,0.15) 0%, rgba(15,23,42,0.6) 100%)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    background: isCenter
+                                      ? 'linear-gradient(135deg, rgba(20,184,166,0.25) 0%, rgba(15,23,42,0.7) 100%)'
+                                      : 'linear-gradient(135deg, rgba(20,184,166,0.1) 0%, rgba(15,23,42,0.5) 100%)',
+                                    border: isCenter
+                                      ? '2px solid rgba(20,184,166,0.6)'
+                                      : '1px solid rgba(255,255,255,0.08)',
                                     backdropFilter: 'blur(20px)',
+                                    borderRadius: 'inherit',
                                   }}
                                 >
-                                  <div className="w-[6vw] h-[6vw] rounded-2xl bg-white/10 flex items-center justify-center text-white/80">
-                                    {LARGE_ICON[cat.icon || ''] || <ConciergeBell className="w-16 h-16" />}
+                                  <div className={`w-[6vw] h-[6vw] rounded-2xl flex items-center justify-center ${
+                                    isCenter ? 'bg-teal-500/20 text-teal-300' : 'bg-white/10 text-white/60'
+                                  }`}>
+                                    {renderIcon(cat.icon, 'lg')}
                                   </div>
-                                  <p className="text-white text-[1.2vw] font-bold tracking-tight">{cat.name}</p>
+                                  <p className={`text-[1.2vw] font-bold tracking-tight ${
+                                    isCenter ? 'text-white' : 'text-white/60'
+                                  }`}>{cat.name}</p>
+                                  {isCenter && (
+                                    <span className="text-teal-400/60 text-[0.6vw] uppercase tracking-widest font-semibold">Press Enter to open</span>
+                                  )}
                                 </div>
                               </motion.div>
                             );
                           })}
                         </div>
 
-                        {/* Dot indicators */}
+                        {/* Dot indicators — selected state */}
                         {total > 1 && (
                           <div className="absolute bottom-[2vh] left-0 right-0 flex justify-center gap-[0.4vw]">
                             {categories.map((_: Service, idx: number) => (
@@ -435,7 +453,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                                 onClick={() => setCurrentIndex(idx)}
                                 className={`rounded-full transition-all duration-300 ${
                                   idx === currentIndex
-                                    ? 'w-[1.5vw] h-[0.35vw] bg-white'
+                                    ? 'w-[1.5vw] h-[0.35vw] bg-teal-400'
                                     : 'w-[0.35vw] h-[0.35vw] bg-white/30 hover:bg-white/50'
                                 }`}
                               />
@@ -458,8 +476,8 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                   >
                     {/* Service header */}
                     <div className="flex items-center gap-[0.8vw] mb-[2vh]">
-                      <div className="w-[3vw] h-[3vw] rounded-xl bg-white/10 flex items-center justify-center text-white/80">
-                        {ICON_MAP[selectedService?.icon || ''] || <ConciergeBell className="w-8 h-8" />}
+                      <div className="w-[3vw] h-[3vw] rounded-xl bg-teal-500/20 flex items-center justify-center text-teal-300">
+                        {renderIcon(selectedService?.icon, 'md')}
                       </div>
                       <div>
                         <h3 className="text-white text-[1.2vw] font-bold">{selectedService?.name}</h3>
@@ -467,17 +485,18 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                       </div>
                     </div>
 
-                    {/* Items grid */}
+                    {/* Items grid — with proper borders */}
                     <div className="flex-1 overflow-y-auto hide-scrollbar grid grid-cols-2 gap-[0.8vw]">
                       {options.map((opt) => {
                         const qty = getQty(opt.id);
                         return (
                           <div
                             key={opt.id}
-                            className="p-[1vw] rounded-2xl flex items-center justify-between gap-[0.6vw] tv-focusable"
+                            className="p-[1vw] rounded-2xl flex items-center justify-between gap-[0.6vw] tv-focusable transition-all"
                             style={{
                               background: qty > 0 ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.06)',
-                              border: qty > 0 ? '1px solid rgba(20,184,166,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                              border: qty > 0 ? '2px solid rgba(20,184,166,0.5)' : '1px solid rgba(255,255,255,0.15)',
+                              boxShadow: qty > 0 ? '0 0 20px rgba(20,184,166,0.1)' : 'none',
                             }}
                             tabIndex={0}
                           >
@@ -489,6 +508,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                               <button
                                 onClick={() => updateCart(opt, 1)}
                                 className="w-[2vw] h-[2vw] rounded-full bg-white/10 hover:bg-teal-500 flex items-center justify-center text-white transition-colors tv-focusable shrink-0"
+                                style={{ border: '1px solid rgba(255,255,255,0.2)' }}
                                 tabIndex={0}
                               >
                                 <Plus className="w-[0.9vw] h-[0.9vw]" />
@@ -544,7 +564,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
 
                     <div className="flex-1 overflow-y-auto hide-scrollbar space-y-[0.6vw]">
                       {cart.map((item) => (
-                        <div key={item.option.id} className="flex items-center justify-between p-[0.8vw] rounded-xl bg-white/5 border border-white/10">
+                        <div key={item.option.id} className="flex items-center justify-between p-[0.8vw] rounded-xl" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
                           <div className="flex-1 min-w-0">
                             <p className="text-white font-semibold text-[0.85vw] truncate">{item.option.name}</p>
                             <p className="text-white/40 text-[0.6vw]">{item.serviceName}</p>
@@ -572,7 +592,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                       </div>
                       <p className="text-white/30 text-[0.6vw] mb-[1.5vh]">Payment will be arranged by the Front Desk after confirmation.</p>
                       <div className="flex gap-[0.6vw]">
-                        <button onClick={() => setStep('items')} className="flex-1 py-[1vh] rounded-xl border border-white/20 text-white font-semibold hover:bg-white/5 transition-colors tv-focusable text-[0.8vw]" tabIndex={0}>
+                        <button onClick={() => setStep('items')} className="flex-1 py-[1vh] rounded-xl text-white font-semibold hover:bg-white/5 transition-colors tv-focusable text-[0.8vw]" style={{ border: '1px solid rgba(255,255,255,0.2)' }} tabIndex={0}>
                           Add More Items
                         </button>
                         <button onClick={handleConfirmOrder} disabled={submitting} className="flex-1 py-[1vh] rounded-xl bg-teal-500 text-white font-bold hover:bg-teal-400 transition-colors tv-focusable disabled:opacity-50 text-[0.8vw]" tabIndex={0}>
