@@ -173,16 +173,18 @@ export default function MainDashboardPage({ params }: { params: any }) {
       return;
     }
 
-    // NATIVE INTENT DETECTION (Android TV / Set Top Box)
-    // ZTE B860H V5.0 + other Android TV boxes:
-    // Use LEANBACK_LAUNCHER category for TV app launching.
-    // Multiple fallback strategies for maximum compatibility.
     if (app.url && !app.url.startsWith('http') && !app.url.startsWith('intent://')) {
       const pkg = app.url.trim();
-      // Strategy: Try leanback launcher intent first, with market:// fallback
+
+      // Reliable STB Native App Launch
+      if (typeof window !== 'undefined' && (window as any).NeotivNative?.launchExternalApp) {
+        (window as any).NeotivNative.launchExternalApp(pkg);
+        return;
+      }
+
+      // Standard Browser Fallback
       const intentUrl = `intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LEANBACK_LAUNCHER;package=${pkg};S.browser_fallback_url=market://details?id=${pkg};end;`;
       window.location.href = intentUrl;
-      // Fallback: if intent doesn't fire within 2s, try direct scheme
       setTimeout(() => {
         window.location.href = `intent://#Intent;package=${pkg};scheme=https;S.browser_fallback_url=https://play.google.com/store/apps/details?id=${pkg};end;`;
       }, 2000);
