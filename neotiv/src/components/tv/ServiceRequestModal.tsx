@@ -285,8 +285,8 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
             )}
           </AnimatePresence>
 
-          {/* Content */}
-          <div className="relative z-10 w-full h-full flex flex-col">
+          {/* Content — stopPropagation so clicks don't fall through to backdrop */}
+          <div className="relative z-10 w-full h-full flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between px-[3vw] pt-[2vh]">
               <div className="flex items-center gap-[0.8vw]">
