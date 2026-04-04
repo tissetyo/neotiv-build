@@ -221,26 +221,10 @@ export function useDpadNavigation(options?: {
       }
     };
 
-    // Also handle mouse click → trigger the focused element
-    const handleMouseClick = (e: MouseEvent) => {
-      const elements = getFocusableElements();
-      if (elements.length === 0) return;
-
-      const closest = findClosestToPoint(e.clientX, e.clientY, elements);
-      if (closest) {
-        e.preventDefault();
-        e.stopPropagation();
-        closest.focus();
-        closest.click();
-      }
-    };
-
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    window.addEventListener('click', handleMouseClick, true);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('click', handleMouseClick, true);
     };
   }, [enabled, getFocusableElements, findClosestToPoint]);
 
