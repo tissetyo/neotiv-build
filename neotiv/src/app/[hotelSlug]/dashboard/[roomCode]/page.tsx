@@ -201,20 +201,32 @@ export default function RoomDashboardPage({ params }: { params: Promise<{ hotelS
       <div className="absolute inset-0 flex items-center justify-center">
         <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: 'easeOut' }}
           className="relative">
-          {/* Avatar */}
-          <div className="absolute -top-14 left-8 z-20">
-            <div className="w-[100px] h-[100px] rounded-full border-4 border-white/40 overflow-hidden">
-              <img src={session?.guestPhotoUrl || '/avatar.png'} alt="Guest" className="w-full h-full object-cover" />
+          {/* Avatar — only show when guest data exists */}
+          {session?.guestName && (
+            <div className="absolute -top-14 left-8 z-20">
+              <div className="w-[100px] h-[100px] rounded-full border-4 border-white/40 overflow-hidden">
+                {session?.guestPhotoUrl ? (
+                  <img src={session.guestPhotoUrl} alt="Guest" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white text-[36px] font-bold">
+                    {session.guestName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Card */}
-          <div className="glass-card px-16 pt-16 pb-12 w-[560px]">
-            <p className="text-white/80 text-[22px]">Welcome in {session?.hotelName || 'Amartha Hotel'}, {session?.hotelLocation?.split(',')[0] || 'Bali'}!</p>
-            <p className="text-white text-[26px] font-bold mt-1">{session?.guestName || 'Mr. Stephen Hawk'}</p>
+          <div className={`glass-card px-16 pb-12 w-[560px] ${session?.guestName ? 'pt-16' : 'pt-12'}`}>
+            <p className="text-white/80 text-[22px]">
+              Welcome{session?.guestName ? ` in ${session?.hotelName || 'our Hotel'}` : ''}!
+            </p>
+            {session?.guestName && (
+              <p className="text-white text-[26px] font-bold mt-1">{session.guestName}</p>
+            )}
             <div className="w-full h-[1px] bg-white/20 my-6" />
             <p className="text-white/70 text-[18px] leading-relaxed">
-              {session?.welcomeMessage || "We hope you enjoy your Trip! We always ready whenever you want, let us know what you needed."}
+              {session?.welcomeMessage || "We hope you enjoy your stay! We are always ready whenever you need us."}
             </p>
             <p className="text-white/80 text-[18px] mt-4 font-medium">Your comfort is our priority!</p>
 

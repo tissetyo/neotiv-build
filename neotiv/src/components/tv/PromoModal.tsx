@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createBrowserClient } from '@/lib/supabase/client';
 import { useRoomStore } from '@/stores/roomStore';
 import { X, ChevronLeft, ChevronRight, Sparkles, Calendar } from 'lucide-react';
 
@@ -27,18 +26,14 @@ export default function PromoModal({ isOpen, onClose }: Props) {
   const [selectedPromo, setSelectedPromo] = useState<Promo | null>(null);
   const autoSlideRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Use server API (bypasses RLS) so STBs without auth cookies can see promos
   const { data: promos } = useSWR(
-    isOpen && store.hotelId ? `promos-modal-${store.hotelId}` : null,
-    async () => {
-      const supabase = createBrowserClient();
-      const { data } = await supabase
-        .from('promos')
-        .select('id, title, description, poster_url, valid_from, valid_until')
-        .eq('hotel_id', store.hotelId!)
-        .eq('is_active', true)
-        .not('poster_url', 'is', null)
-        .order('created_at', { ascending: false });
-      return (data || []) as Promo[];
+    isOpen && store.hotelSlug ? `/api/hotel/${store.hotelSlug}/promos` : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const json = await res.json();
+      return (json.promos || []) as Promo[];
     },
     { refreshInterval: 0 }
   );

@@ -22,9 +22,10 @@ import ServiceRequestModal from '@/components/tv/ServiceRequestModal';
 import ConnectionStatus from '@/components/tv/ConnectionStatus';
 import PromoModal from '@/components/tv/PromoModal';
 import NotificationsModal from '@/components/tv/NotificationsModal';
+import DisplaySettingsModal from '@/components/tv/DisplaySettingsModal';
 import { CheckoutWidget, CheckoutModal } from '@/components/tv/CheckoutReminder';
 import type { AppConfig } from '@/components/tv/AppLauncher';
-import { AlarmClock, MessageCircle, Bell } from 'lucide-react';
+import { AlarmClock, MessageCircle, Bell, SlidersHorizontal } from 'lucide-react';
 
 export default function MainDashboardPage({ params }: { params: any }) {
   // Safe unwrap for dynamic params (handles both Promise and direct object for Next.js 15/16 consistency)
@@ -47,6 +48,28 @@ export default function MainDashboardPage({ params }: { params: any }) {
   }, []);
 
   useDpadNavigation({ enabled: mounted && !activeModal && !launchApp, onEscape: handleEscape });
+
+  // KIOSK MODE: Prevent left-click mouse actions on dashboard
+  // Only D-pad Enter (which triggers .click()) should work.
+  // Mouse right-click is also blocked.
+  useEffect(() => {
+    if (!mounted) return;
+    const blockMouse = (e: MouseEvent) => {
+      // Allow click events dispatched programmatically (from D-pad Enter)
+      if (!e.isTrusted) return;
+      // Block single left clicks from mouse
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const blockContext = (e: MouseEvent) => { e.preventDefault(); };
+    // Use capture phase to intercept before anything else
+    document.addEventListener('click', blockMouse, true);
+    document.addEventListener('contextmenu', blockContext, true);
+    return () => {
+      document.removeEventListener('click', blockMouse, true);
+      document.removeEventListener('contextmenu', blockContext, true);
+    };
+  }, [mounted]);
 
   const { data: liveConfig } = useSWR(
     mounted ? `/api/hotel/${hotelSlug}/tv-config` : null,
@@ -140,22 +163,28 @@ export default function MainDashboardPage({ params }: { params: any }) {
     }
 
     // NATIVE INTENT DETECTION (Android TV / Set Top Box)
-    // If the URL is just a package name (e.g., com.google.android.youtube.tv)
-    // Try to launch the app directly. If not installed, fall back to Play Store.
+    // ZTE B860H V5.0 + other Android TV boxes:
+    // Use LEANBACK_LAUNCHER category for TV app launching.
+    // Multiple fallback strategies for maximum compatibility.
     if (app.url && !app.url.startsWith('http') && !app.url.startsWith('intent://')) {
       const pkg = app.url.trim();
-      const intentUrl = `intent://#Intent;package=${pkg};scheme=https;S.browser_fallback_url=https://play.google.com/store/apps/details?id=${pkg};end;`;
+      // Strategy: Try leanback launcher intent first, with market:// fallback
+      const intentUrl = `intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LEANBACK_LAUNCHER;package=${pkg};S.browser_fallback_url=market://details?id=${pkg};end;`;
       window.location.href = intentUrl;
+      // Fallback: if intent doesn't fire within 2s, try direct scheme
+      setTimeout(() => {
+        window.location.href = `intent://#Intent;package=${pkg};scheme=https;S.browser_fallback_url=https://play.google.com/store/apps/details?id=${pkg};end;`;
+      }, 2000);
       return;
     }
     // If it's already a perfectly formatted intent
     if (app.url && app.url.startsWith('intent://')) {
-      // Ensure it has a Play Store fallback if not already present
       let intentUrl = app.url;
+      // Ensure it has fallback URL
       if (!intentUrl.includes('S.browser_fallback_url')) {
         const pkgMatch = intentUrl.match(/package=([^;]+)/);
         if (pkgMatch) {
-          intentUrl = intentUrl.replace(';end;', `;S.browser_fallback_url=https://play.google.com/store/apps/details?id=${pkgMatch[1]};end;`);
+          intentUrl = intentUrl.replace(';end;', `;S.browser_fallback_url=market://details?id=${pkgMatch[1]};end;`);
         }
       }
       window.location.href = intentUrl;
@@ -240,12 +269,19 @@ export default function MainDashboardPage({ params }: { params: any }) {
     }
   };
 
+  // Display filter from config
+  const brightness = config.theme?.brightness ?? 1;
+  const contrast = config.theme?.contrast ?? 1;
+  const saturate = config.theme?.saturate ?? 1;
+  const displayFilter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
+
   return (
-      <div className="w-screen h-screen relative overflow-hidden bg-slate-900"
+      <div className="w-screen h-screen relative overflow-hidden bg-slate-900 tv-kiosk-mode"
         style={{ 
           backgroundImage: `url(${bgUrl})`, 
           backgroundSize: 'cover', 
           backgroundPosition: 'center',
+          filter: displayFilter,
           '--widget-dark-opacity': config.theme?.opacityDark ?? 0.60,
           '--widget-light-opacity': config.theme?.opacityLight ?? 0.82,
           '--focus-color': config.theme?.focusColor ?? '#14b8a6',
@@ -419,6 +455,21 @@ export default function MainDashboardPage({ params }: { params: any }) {
             <span className="text-[0.6vw] font-semibold mt-1">Notifs</span>
           </button>
         )}
+
+        {/* Display Settings Widget */}
+        <button 
+          onClick={() => handleAction('display')}
+          className="tv-app-card tv-focusable rounded-[var(--widget-radius)] flex flex-col items-center justify-center text-white group relative overflow-hidden widget-animate"
+          style={{ 
+            gridColumn: '12 / span 1', gridRow: '4 / span 1',
+            animationDelay: '650ms',
+            '--app-color': '#6366f1',
+          } as React.CSSProperties}
+          tabIndex={0}
+        >
+          <SlidersHorizontal size={20} className="group-hover:scale-110 transition-transform text-white/90" strokeWidth={2.5} />
+          <span className="text-[0.6vw] font-semibold mt-1">Display</span>
+        </button>
       </div>
 
       {/* ===== MARQUEE BAR ===== */}
@@ -439,6 +490,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
         onClose={() => setActiveModal(null)}
         onOrderComplete={() => setActiveModal('chat')}
       />
+      <DisplaySettingsModal isOpen={activeModal === 'display'} onClose={() => setActiveModal(null)} />
       <ConnectionStatus />
     </div>
   );

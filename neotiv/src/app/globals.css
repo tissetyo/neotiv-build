@@ -249,3 +249,11 @@
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 8px;
 }
+
+/* ═══════════════════════════════════════════
+   KIOSK MODE — Hide cursor on TV dashboard
+   ═══════════════════════════════════════════ */
+.tv-kiosk-mode,
+.tv-kiosk-mode * {
+  cursor: none !important;
+}

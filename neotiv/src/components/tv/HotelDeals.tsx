@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createBrowserClient } from '@/lib/supabase/client';
 import { useRoomStore } from '@/stores/roomStore';
 import { Sparkles } from 'lucide-react';
 
@@ -15,18 +14,14 @@ export default function HotelDeals({ onOpenPromos }: Props) {
   const store = useRoomStore();
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Use server API (bypasses RLS) so STBs without auth cookies can see promos
   const { data: promos } = useSWR(
-    store.hotelId ? `promos-${store.hotelId}` : null,
-    async () => {
-      const supabase = createBrowserClient();
-      const { data } = await supabase
-        .from('promos')
-        .select('poster_url')
-        .eq('hotel_id', store.hotelId!)
-        .eq('is_active', true)
-        .not('poster_url', 'is', null)
-        .order('created_at', { ascending: false });
-      return data || [];
+    store.hotelSlug ? `/api/hotel/${store.hotelSlug}/promos` : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const json = await res.json();
+      return json.promos || [];
     },
     { refreshInterval: 120000 }
   );
