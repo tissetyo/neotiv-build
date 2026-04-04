@@ -16,40 +16,29 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
   const hydrate = useRoomStore(s => s.hydrate);
   const config = (store.tvLayoutConfig && typeof store.tvLayoutConfig === 'object' ? store.tvLayoutConfig : {}) as any;
 
-  const [brightness, setBrightness] = useState(config.theme?.brightness ?? 1);
-  const [contrast, setContrast] = useState(config.theme?.contrast ?? 1);
-  const [saturate, setSaturate] = useState(config.theme?.saturate ?? 1);
-  const [scale, setScale] = useState(config.theme?.scale ?? 1);
+  const overrides = store.tvDisplayOverrides || {};
+  const [brightness, setBrightness] = useState(overrides.brightness ?? config.theme?.brightness ?? 1);
+  const [contrast, setContrast] = useState(overrides.contrast ?? config.theme?.contrast ?? 1);
+  const [saturate, setSaturate] = useState(overrides.saturate ?? config.theme?.saturate ?? 1);
+  const [scale, setScale] = useState(overrides.scale ?? config.theme?.scale ?? 1);
 
   const [isAdjusting, setIsAdjusting] = useState(false);
   const adjustTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useDpadNavigation({ enabled: isOpen, onEscape: onClose, selector: '.display-focusable' });
 
-  // Sync from config when modal opens
+  // Sync from store when modal opens
   useEffect(() => {
     if (isOpen) {
-      setBrightness(config.theme?.brightness ?? 1);
-      setContrast(config.theme?.contrast ?? 1);
-      setSaturate(config.theme?.saturate ?? 1);
-      setScale(config.theme?.scale ?? 1);
+      setBrightness(store.tvDisplayOverrides?.brightness ?? config.theme?.brightness ?? 1);
+      setContrast(store.tvDisplayOverrides?.contrast ?? config.theme?.contrast ?? 1);
+      setSaturate(store.tvDisplayOverrides?.saturate ?? config.theme?.saturate ?? 1);
+      setScale(store.tvDisplayOverrides?.scale ?? config.theme?.scale ?? 1);
     }
-  }, [isOpen]);
+  }, [isOpen, store.tvDisplayOverrides, config.theme]);
 
-  // Apply to local store (UI update only, preview)
-  const previewSettings = useCallback((b: number, c: number, s: number) => {
-    const updatedConfig = {
-      ...config,
-      theme: {
-        ...config.theme,
-        brightness: b,
-        contrast: c,
-        saturate: s,
-        scale: Math.round(scale * 100) / 100, // Pass current scale
-      },
-    };
-    hydrate({ tvLayoutConfig: updatedConfig });
-  }, [config, hydrate, scale]);
+  // Not needed separately if we use tvDisplayOverrides directly
+  // removed previewSettings
 
   const handleChange = useCallback((type: 'brightness' | 'contrast' | 'saturate' | 'scale', value: number) => {
     const clamped = Math.round(value * 100) / 100;
@@ -59,37 +48,46 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
     if (type === 'saturate') { s = clamped; setSaturate(clamped); }
     if (type === 'scale') { zoom = clamped; setScale(clamped); }
     
-    // Live preview
-    const updatedConfig = {
-      ...config,
-      theme: { ...config.theme, brightness: b, contrast: c, saturate: s, scale: zoom },
-    };
-    hydrate({ tvLayoutConfig: updatedConfig });
+    // Live preview into overrides!
+    hydrate({ tvDisplayOverrides: { brightness: b, contrast: c, saturate: s, scale: zoom } });
 
     // Fade out backdrop
     setIsAdjusting(true);
     if (adjustTimeoutRef.current) clearTimeout(adjustTimeoutRef.current);
     adjustTimeoutRef.current = setTimeout(() => setIsAdjusting(false), 800);
-  }, [brightness, contrast, saturate, scale, config, hydrate]);
+  }, [brightness, contrast, saturate, scale, hydrate]);
 
   const handleReset = useCallback(() => {
     setBrightness(1);
     setContrast(1);
     setSaturate(1);
     setScale(1);
-    const updatedConfig = {
-      ...config,
-      theme: { ...config.theme, brightness: 1, contrast: 1, saturate: 1, scale: 1 },
-    };
-    hydrate({ tvLayoutConfig: updatedConfig });
+    hydrate({ tvDisplayOverrides: { brightness: 1, contrast: 1, saturate: 1, scale: 1 } });
     setIsAdjusting(true);
     if (adjustTimeoutRef.current) clearTimeout(adjustTimeoutRef.current);
     adjustTimeoutRef.current = setTimeout(() => setIsAdjusting(false), 800);
-  }, [config, hydrate]);
+  }, [hydrate]);
 
   const handleApply = useCallback(() => {
     onClose();
-  }, [onClose]);
+
+    // The store's `persist` middleware automatically saves to `neotiv-room-store`,
+    // However MainDashboardPage initializes from `neotiv_room_${hotelSlug}_${roomCode}`.
+    // Let's ensure both are safely merged.
+    if (store.hotelSlug && store.roomCode) {
+      const key = `neotiv_room_${store.hotelSlug}_${store.roomCode}`;
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          data.tvDisplayOverrides = { brightness, contrast, saturate, scale };
+          localStorage.setItem(key, JSON.stringify(data));
+        } catch (e) {
+          console.error("Failed to save display settings", e);
+        }
+      }
+    }
+  }, [onClose, store.hotelSlug, store.roomCode, brightness, contrast, saturate, scale]);
 
   const handleLogout = useCallback(() => {
     // Clear all configuration from local storage

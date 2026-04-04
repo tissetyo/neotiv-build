@@ -25,6 +25,7 @@ interface RoomState {
   services: Service[];
   announcements: Announcement[];
   tvLayoutConfig: Record<string, any> | null;
+  tvDisplayOverrides: { brightness?: number; contrast?: number; saturate?: number; scale?: number } | null;
   unreadChatCount: number;
   hydrate: (data: Partial<RoomState>) => void;
   setNotification: (n: Notification) => void;
@@ -57,6 +58,7 @@ const initialState = {
   services: [],
   announcements: [],
   tvLayoutConfig: null,
+  tvDisplayOverrides: null,
   unreadChatCount: 0,
 };
 
@@ -91,6 +93,7 @@ export const useRoomStore = create<RoomState>()(
         services: state.services,
         announcements: state.announcements,
         tvLayoutConfig: state.tvLayoutConfig,
+        tvDisplayOverrides: state.tvDisplayOverrides,
       }),
     }
   )

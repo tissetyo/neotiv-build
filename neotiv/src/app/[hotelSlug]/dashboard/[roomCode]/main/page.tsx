@@ -158,6 +158,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
           checkoutDate: data.checkoutDate || null,
           clockTimezones: data.clockTimezones || ['America/New_York', 'Europe/Paris', 'Asia/Shanghai'],
           clockLabels: data.clockLabels || ['New York', 'France', 'China'],
+          tvDisplayOverrides: data.tvDisplayOverrides || null,
         });
       } catch { /* use defaults */ }
     }
@@ -279,11 +280,12 @@ export default function MainDashboardPage({ params }: { params: any }) {
     }
   };
 
-  // Display filter from config
-  const brightness = config.theme?.brightness ?? 1;
-  const contrast = config.theme?.contrast ?? 1;
-  const saturate = config.theme?.saturate ?? 1;
-  const scale = config.theme?.scale ?? 1;
+  // Display filter from config + local room overrides
+  const overrides = store.tvDisplayOverrides || {};
+  const brightness = overrides.brightness ?? config.theme?.brightness ?? 1;
+  const contrast = overrides.contrast ?? config.theme?.contrast ?? 1;
+  const saturate = overrides.saturate ?? config.theme?.saturate ?? 1;
+  const scale = overrides.scale ?? config.theme?.scale ?? 1;
   const displayFilter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
 
   return (
