@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRoomStore } from '@/stores/roomStore';
 import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
@@ -20,6 +20,9 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
   const [contrast, setContrast] = useState(config.theme?.contrast ?? 1);
   const [saturate, setSaturate] = useState(config.theme?.saturate ?? 1);
 
+  const [isAdjusting, setIsAdjusting] = useState(false);
+  const adjustTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useDpadNavigation({ enabled: isOpen, onEscape: onClose, selector: '.display-focusable' });
 
   // Sync from config when modal opens
@@ -31,7 +34,8 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
     }
   }, [isOpen]);
 
-  const applySettings = useCallback((b: number, c: number, s: number) => {
+  // Apply to local store (UI update only, preview)
+  const previewSettings = useCallback((b: number, c: number, s: number) => {
     const updatedConfig = {
       ...config,
       theme: {
@@ -50,15 +54,29 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
     if (type === 'brightness') { b = clamped; setBrightness(clamped); }
     if (type === 'contrast') { c = clamped; setContrast(clamped); }
     if (type === 'saturate') { s = clamped; setSaturate(clamped); }
-    applySettings(b, c, s);
-  }, [brightness, contrast, saturate, applySettings]);
+    
+    // Live preview
+    previewSettings(b, c, s);
+
+    // Fade out backdrop
+    setIsAdjusting(true);
+    if (adjustTimeoutRef.current) clearTimeout(adjustTimeoutRef.current);
+    adjustTimeoutRef.current = setTimeout(() => setIsAdjusting(false), 800);
+  }, [brightness, contrast, saturate, previewSettings]);
 
   const handleReset = useCallback(() => {
     setBrightness(1);
     setContrast(1);
     setSaturate(1);
-    applySettings(1, 1, 1);
-  }, [applySettings]);
+    previewSettings(1, 1, 1);
+    setIsAdjusting(true);
+    if (adjustTimeoutRef.current) clearTimeout(adjustTimeoutRef.current);
+    adjustTimeoutRef.current = setTimeout(() => setIsAdjusting(false), 800);
+  }, [previewSettings]);
+
+  const handleApply = useCallback(() => {
+    onClose();
+  }, [onClose]);
 
   if (!isOpen) return null;
 
@@ -81,8 +99,12 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
         >
           {/* Backdrop */}
           <div
-            className="absolute inset-0"
-            style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(20px)' }}
+            className="absolute inset-0 transition-opacity duration-300"
+            style={{ 
+              background: 'rgba(15, 23, 42, 0.85)', 
+              backdropFilter: 'blur(20px)',
+              opacity: isAdjusting ? 0 : 1 
+            }}
           />
 
           {/* Content */}
@@ -157,7 +179,16 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
               ))}
             </div>
 
-            <p className="text-white/30 text-[0.6vw] mt-[2vh] text-center">Use D-pad to adjust. Press Escape to close.</p>
+            <div className="mt-[3vh] flex flex-col gap-[1vh] items-center">
+              <button
+                onClick={handleApply}
+                className="w-full py-[1.2vh] rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-bold text-[1vw] transition-colors display-focusable focus:ring-4 focus:ring-teal-400/30"
+                tabIndex={0}
+              >
+                Apply Settings
+              </button>
+              <p className="text-white/40 text-[0.6vw] text-center">Use D-pad to adjust. Press Escape to close without applying.</p>
+            </div>
           </motion.div>
         </motion.div>
       )}

@@ -116,23 +116,25 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
     }
   }, [isOpen, store.roomId, store.hotelId, sessionId]);
 
-  // Fetch service categories
+  // Fetch service categories via API to bypass RLS
   const { data: categories = [] } = useSWR(
-    isOpen && store.hotelId ? `service-cats-${store.hotelId}` : null,
-    async () => {
-      const supabase = createBrowserClient();
-      const { data } = await supabase.from('services').select('*').eq('hotel_id', store.hotelId).order('sort_order');
-      return (data || []) as Service[];
+    isOpen && store.hotelSlug ? `/api/hotel/${store.hotelSlug}/services` : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const json = await res.json();
+      return (json.services || []) as Service[];
     }
   );
 
-  // Fetch options for selected service
+  // Fetch options for selected service via API to bypass RLS
   const { data: options = [] } = useSWR(
-    isOpen && selectedService ? `svc-opts-${selectedService.id}` : null,
-    async () => {
-      const supabase = createBrowserClient();
-      const { data } = await supabase.from('service_options').select('*').eq('service_id', selectedService!.id);
-      return (data || []) as ServiceOption[];
+    isOpen && selectedService ? `/api/services/${selectedService.id}/options` : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const json = await res.json();
+      return (json.options || []) as ServiceOption[];
     }
   );
 
