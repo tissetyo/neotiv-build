@@ -82,6 +82,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedItemIndex, setSelectedItemIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   // Reset state on open/close
@@ -91,6 +92,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
       setCart([]);
       setSelectedService(null);
       setCurrentIndex(0);
+      setSelectedItemIndex(0);
       setShowQr(false);
     }
   }, [isOpen]);
@@ -134,6 +136,27 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
 
   // NO auto-slideshow — user navigates manually
 
+  // Reset item index when entering items step
+  useEffect(() => {
+    if (step === 'items') setSelectedItemIndex(0);
+  }, [step]);
+
+  const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+
+  const updateCart = useCallback((option: ServiceOption, delta: number) => {
+    const serviceName = selectedService?.name || '';
+    setCart(prev => {
+      const existing = prev.find(item => item.option.id === option.id);
+      if (existing) {
+        const newQty = existing.quantity + delta;
+        if (newQty <= 0) return prev.filter(item => item.option.id !== option.id);
+        return prev.map(item => item.option.id === option.id ? { ...item, quantity: newQty } : item);
+      }
+      if (delta > 0) return [...prev, { option, serviceName, quantity: 1 }];
+      return prev;
+    });
+  }, [selectedService]);
+
   // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
@@ -159,26 +182,31 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
           setStep('items');
         }
       }
+      // D-pad navigation for items grid (2 columns)
+      if (step === 'items' && options.length > 0) {
+        const cols = 2;
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          setSelectedItemIndex((prev) => Math.min(prev + 1, options.length - 1));
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          setSelectedItemIndex((prev) => Math.max(prev - 1, 0));
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSelectedItemIndex((prev) => Math.min(prev + cols, options.length - 1));
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedItemIndex((prev) => Math.max(prev - cols, 0));
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          const opt = options[selectedItemIndex];
+          if (opt) updateCart(opt, 1);
+        }
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, step, categories, currentIndex, showQr, onClose]);
-
-  const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
-
-  const updateCart = useCallback((option: ServiceOption, delta: number) => {
-    const serviceName = selectedService?.name || '';
-    setCart(prev => {
-      const existing = prev.find(item => item.option.id === option.id);
-      if (existing) {
-        const newQty = existing.quantity + delta;
-        if (newQty <= 0) return prev.filter(item => item.option.id !== option.id);
-        return prev.map(item => item.option.id === option.id ? { ...item, quantity: newQty } : item);
-      }
-      if (delta > 0) return [...prev, { option, serviceName, quantity: 1 }];
-      return prev;
-    });
-  }, [selectedService]);
+  }, [isOpen, step, categories, currentIndex, options, selectedItemIndex, showQr, onClose, updateCart]);
 
   const getQty = (optionId: string) => cart.find(item => item.option.id === optionId)?.quantity || 0;
   const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
@@ -287,21 +315,25 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
 
           {/* Content — stopPropagation so clicks don't fall through to backdrop */}
           <div className="relative z-10 w-full h-full flex flex-col" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
+            {/* Header — close/back on LEFT for consistent quick-exit UX */}
             <div className="flex items-center justify-between px-[3vw] pt-[2vh]">
               <div className="flex items-center gap-[0.8vw]">
-                {step !== 'carousel' && (
-                  <button
-                    onClick={() => {
-                      if (step === 'confirm') setStep('items');
-                      else if (step === 'items') { setStep('carousel'); setSelectedService(null); }
-                    }}
-                    className="w-[2.2vw] h-[2.2vw] rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors tv-focusable mr-[0.4vw]"
-                    tabIndex={0}
-                  >
+                {/* Close / Back — always on the left */}
+                <button
+                  onClick={() => {
+                    if (step === 'confirm') setStep('items');
+                    else if (step === 'items') { setStep('carousel'); setSelectedService(null); }
+                    else onClose();
+                  }}
+                  className="w-[2.2vw] h-[2.2vw] rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors tv-focusable"
+                  tabIndex={0}
+                >
+                  {step === 'carousel' ? (
+                    <X className="w-[1vw] h-[1vw] text-white/70" />
+                  ) : (
                     <ArrowLeft className="w-[1vw] h-[1vw] text-white/70" />
-                  </button>
-                )}
+                  )}
+                </button>
                 <div className="w-[2.5vw] h-[2.5vw] rounded-xl bg-white/10 flex items-center justify-center text-white/80">
                   {step === 'items' && selectedService ? renderIcon(selectedService.icon, 'sm') : <ConciergeBell className="w-[1.3vw] h-[1.3vw]" />}
                 </div>
@@ -330,14 +362,6 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                     <span className="text-white text-[0.7vw] font-bold">{totalItems}</span>
                   </button>
                 )}
-                {/* Close */}
-                <button
-                  onClick={onClose}
-                  className="w-[2.2vw] h-[2.2vw] rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors tv-focusable"
-                  tabIndex={0}
-                >
-                  <X className="w-[1vw] h-[1vw] text-white/70" />
-                </button>
               </div>
             </div>
 
@@ -487,18 +511,20 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
 
                     {/* Items grid — with proper borders */}
                     <div className="flex-1 overflow-y-auto hide-scrollbar grid grid-cols-2 gap-[0.8vw]">
-                      {options.map((opt) => {
+                      {options.map((opt, optIdx) => {
                         const qty = getQty(opt.id);
+                        const isSelected = optIdx === selectedItemIndex;
                         return (
                           <div
                             key={opt.id}
-                            className="p-[1vw] rounded-2xl flex items-center justify-between gap-[0.6vw] tv-focusable transition-all"
+                            className={`p-[1vw] rounded-2xl flex items-center justify-between gap-[0.6vw] tv-focusable transition-all cursor-pointer ${isSelected ? 'ring-2 ring-teal-400 ring-offset-2 ring-offset-slate-900' : ''}`}
                             style={{
-                              background: qty > 0 ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.06)',
-                              border: qty > 0 ? '2px solid rgba(20,184,166,0.5)' : '1px solid rgba(255,255,255,0.15)',
-                              boxShadow: qty > 0 ? '0 0 20px rgba(20,184,166,0.1)' : 'none',
+                              background: isSelected ? 'rgba(20,184,166,0.18)' : qty > 0 ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.06)',
+                              border: qty > 0 ? '2px solid rgba(20,184,166,0.5)' : isSelected ? '2px solid rgba(20,184,166,0.4)' : '1px solid rgba(255,255,255,0.15)',
+                              boxShadow: isSelected ? '0 0 24px rgba(20,184,166,0.15)' : qty > 0 ? '0 0 20px rgba(20,184,166,0.1)' : 'none',
                             }}
                             tabIndex={0}
+                            onClick={() => { setSelectedItemIndex(optIdx); updateCart(opt, 1); }}
                           >
                             <div className="min-w-0 flex-1">
                               <h4 className="text-white text-[0.85vw] font-bold truncate">{opt.name}</h4>
