@@ -107,6 +107,13 @@ export default function GuestLogoutModal({ isOpen, onClose }: Props) {
       }
 
       onClose();
+
+      // Exit kiosk app if running in Neotiv STB wrapper
+      setTimeout(() => {
+        if (typeof window !== 'undefined' && (window as any).NeotivNative?.exitApp) {
+          (window as any).NeotivNative.exitApp();
+        }
+      }, 500);
     } catch {
       setError('Connection error');
       setPin('');
