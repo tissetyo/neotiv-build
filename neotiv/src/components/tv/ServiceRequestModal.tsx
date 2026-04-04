@@ -10,6 +10,7 @@ import {
   Utensils, Car, Shirt, Coffee, Sparkles, Scissors, ShoppingBag, Map, Briefcase, Bell,
   ConciergeBell, Plus, Minus, ShoppingCart, CheckCircle2, ArrowLeft, X, ChevronLeft, ChevronRight, QrCode
 } from 'lucide-react';
+import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
 import type { Service, ServiceOption } from '@/types';
 
 // Match admin/frontoffice icon mapping exactly
@@ -82,8 +83,10 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [selectedItemIndex, setSelectedItemIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+
+  // Enable native D-pad navigation for this modal
+  useDpadNavigation({ enabled: isOpen && !showQr, onEscape: onClose, selector: '.tv-focusable' });
 
   // Reset state on open/close
   useEffect(() => {
@@ -92,7 +95,6 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
       setCart([]);
       setSelectedService(null);
       setCurrentIndex(0);
-      setSelectedItemIndex(0);
       setShowQr(false);
     }
   }, [isOpen]);
@@ -136,9 +138,9 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
 
   // NO auto-slideshow — user navigates manually
 
-  // Reset item index when entering items step
+  // Reset current index when step changes
   useEffect(() => {
-    if (step === 'items') setSelectedItemIndex(0);
+    if (step === 'items') setCurrentIndex(0); // Optional: keep state clean
   }, [step]);
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
@@ -156,57 +158,6 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
       return prev;
     });
   }, [selectedService]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Backspace') {
-        e.preventDefault();
-        if (showQr) { setShowQr(false); return; }
-        if (step === 'confirm') { setStep('items'); return; }
-        if (step === 'items') { setStep('carousel'); setSelectedService(null); return; }
-        onClose();
-        return;
-      }
-      if (step === 'carousel' && categories.length > 0) {
-        if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          setCurrentIndex((prev) => (prev + 1) % categories.length);
-        } else if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          setCurrentIndex((prev) => (prev - 1 + categories.length) % categories.length);
-        } else if (e.key === 'Enter') {
-          e.preventDefault();
-          setSelectedService(categories[currentIndex]);
-          setStep('items');
-        }
-      }
-      // D-pad navigation for items grid (2 columns)
-      if (step === 'items' && options.length > 0) {
-        const cols = 2;
-        if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          setSelectedItemIndex((prev) => Math.min(prev + 1, options.length - 1));
-        } else if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          setSelectedItemIndex((prev) => Math.max(prev - 1, 0));
-        } else if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          setSelectedItemIndex((prev) => Math.min(prev + cols, options.length - 1));
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          setSelectedItemIndex((prev) => Math.max(prev - cols, 0));
-        } else if (e.key === 'Enter') {
-          e.preventDefault();
-          const opt = options[selectedItemIndex];
-          if (opt) updateCart(opt, 1);
-        }
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, step, categories, currentIndex, options, selectedItemIndex, showQr, onClose, updateCart]);
 
   const getQty = (optionId: string) => cart.find(item => item.option.id === optionId)?.quantity || 0;
   const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
@@ -424,10 +375,12 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                             return (
                               <motion.div
                                 key={cat.id}
-                                className="absolute inset-0 rounded-3xl overflow-hidden cursor-pointer"
+                                className="absolute inset-0 rounded-3xl overflow-hidden cursor-pointer tv-focusable group"
+                                tabIndex={0}
                                 style={{ zIndex }}
                                 animate={{ x: `${translateX}%`, scale, opacity }}
                                 transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                onFocus={() => setCurrentIndex(idx)}
                                 onClick={() => {
                                   if (isCenter) {
                                     setSelectedService(cat);
@@ -439,7 +392,7 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                               >
                                 {/* Card face — with selected border on center card */}
                                 <div
-                                  className="w-full h-full flex flex-col items-center justify-center gap-[2vh]"
+                                  className="w-full h-full flex flex-col items-center justify-center gap-[2vh] transition-all group-focus:ring-2 group-focus:ring-teal-400 group-focus:ring-offset-4 group-focus:ring-offset-slate-900"
                                   style={{
                                     background: isCenter
                                       ? 'linear-gradient(135deg, rgba(20,184,166,0.25) 0%, rgba(15,23,42,0.7) 100%)'
@@ -511,28 +464,27 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
 
                     {/* Items grid — with proper borders */}
                     <div className="flex-1 overflow-y-auto hide-scrollbar grid grid-cols-2 gap-[0.8vw]">
-                      {options.map((opt, optIdx) => {
+                      {options.map((opt) => {
                         const qty = getQty(opt.id);
-                        const isSelected = optIdx === selectedItemIndex;
                         return (
                           <div
                             key={opt.id}
-                            className={`p-[1vw] rounded-2xl flex items-center justify-between gap-[0.6vw] tv-focusable transition-all cursor-pointer ${isSelected ? 'ring-2 ring-teal-400 ring-offset-2 ring-offset-slate-900' : ''}`}
+                            className={`p-[1vw] rounded-2xl flex items-center justify-between gap-[0.6vw] tv-focusable transition-all cursor-pointer focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-900 group`}
                             style={{
-                              background: isSelected ? 'rgba(20,184,166,0.18)' : qty > 0 ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.06)',
-                              border: qty > 0 ? '2px solid rgba(20,184,166,0.5)' : isSelected ? '2px solid rgba(20,184,166,0.4)' : '1px solid rgba(255,255,255,0.15)',
-                              boxShadow: isSelected ? '0 0 24px rgba(20,184,166,0.15)' : qty > 0 ? '0 0 20px rgba(20,184,166,0.1)' : 'none',
+                              background: qty > 0 ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.06)',
+                              border: qty > 0 ? '2px solid rgba(20,184,166,0.5)' : '1px solid rgba(255,255,255,0.15)',
+                              boxShadow: qty > 0 ? '0 0 20px rgba(20,184,166,0.1)' : 'none',
                             }}
                             tabIndex={0}
-                            onClick={() => { setSelectedItemIndex(optIdx); updateCart(opt, 1); }}
+                            onClick={() => updateCart(opt, 1)}
                           >
                             <div className="min-w-0 flex-1">
-                              <h4 className="text-white text-[0.85vw] font-bold truncate">{opt.name}</h4>
+                              <h4 className="text-white text-[0.85vw] font-bold truncate group-focus:text-teal-300 transition-colors">{opt.name}</h4>
                               <span className="text-teal-400 text-[0.7vw] font-medium">{formatRupiah(opt.price)}</span>
                             </div>
                             {qty === 0 ? (
                               <button
-                                onClick={() => updateCart(opt, 1)}
+                                onClick={(e) => { e.stopPropagation(); updateCart(opt, 1); }}
                                 className="w-[2vw] h-[2vw] rounded-full bg-white/10 hover:bg-teal-500 flex items-center justify-center text-white transition-colors tv-focusable shrink-0"
                                 style={{ border: '1px solid rgba(255,255,255,0.2)' }}
                                 tabIndex={0}
@@ -541,11 +493,11 @@ export default function ServiceRequestModal({ isOpen, onClose, onOrderComplete }
                               </button>
                             ) : (
                               <div className="flex items-center gap-[0.3vw] bg-white/10 rounded-full px-[0.3vw] py-[0.2vw] shrink-0">
-                                <button onClick={() => updateCart(opt, -1)} className="w-[1.6vw] h-[1.6vw] rounded-full bg-white/10 hover:bg-rose-500 flex items-center justify-center text-white tv-focusable" tabIndex={0}>
+                                <button onClick={(e) => { e.stopPropagation(); updateCart(opt, -1); }} className="w-[1.6vw] h-[1.6vw] rounded-full bg-white/10 hover:bg-rose-500 flex items-center justify-center text-white tv-focusable relative z-10" tabIndex={0}>
                                   <Minus className="w-[0.6vw] h-[0.6vw]" />
                                 </button>
                                 <span className="text-white font-bold text-[0.7vw] min-w-[1vw] text-center">{qty}</span>
-                                <button onClick={() => updateCart(opt, 1)} className="w-[1.6vw] h-[1.6vw] rounded-full bg-teal-500 hover:bg-teal-400 flex items-center justify-center text-white tv-focusable" tabIndex={0}>
+                                <button onClick={(e) => { e.stopPropagation(); updateCart(opt, 1); }} className="w-[1.6vw] h-[1.6vw] rounded-full bg-teal-500 hover:bg-teal-400 flex items-center justify-center text-white tv-focusable relative z-10" tabIndex={0}>
                                   <Plus className="w-[0.6vw] h-[0.6vw]" />
                                 </button>
                               </div>

@@ -74,14 +74,23 @@ export default function MainDashboardPage({ params }: { params: any }) {
   );
 
   useEffect(() => {
-    if (liveConfig?.tvLayoutConfig) {
-      const incoming = JSON.stringify(liveConfig.tvLayoutConfig);
-      const current = JSON.stringify(currentLayoutConfig);
-      if (incoming !== current) {
-        hydrate({ tvLayoutConfig: liveConfig.tvLayoutConfig });
+    if (liveConfig) {
+      const updates: any = {};
+      if (liveConfig.tvLayoutConfig) {
+        const incoming = JSON.stringify(liveConfig.tvLayoutConfig);
+        const current = JSON.stringify(currentLayoutConfig);
+        if (incoming !== current) {
+          updates.tvLayoutConfig = liveConfig.tvLayoutConfig;
+        }
+      }
+      if (liveConfig.featuredImageUrl !== undefined && liveConfig.featuredImageUrl !== store.hotelFeaturedImageUrl) {
+        updates.hotelFeaturedImageUrl = liveConfig.featuredImageUrl;
+      }
+      if (Object.keys(updates).length > 0) {
+        hydrate(updates);
       }
     }
-  }, [liveConfig, currentLayoutConfig, hydrate]);
+  }, [liveConfig, currentLayoutConfig, store.hotelFeaturedImageUrl, hydrate]);
 
   useEffect(() => {
     if (liveStatus) {

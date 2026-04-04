@@ -23,7 +23,7 @@ export async function GET(
 
     const { data: hotel, error } = await supabase
       .from('hotels')
-      .select('tv_layout_config')
+      .select('tv_layout_config, featured_image_url')
       .eq('slug', hotelSlug)
       .single();
 
@@ -31,7 +31,10 @@ export async function GET(
       return NextResponse.json({ error: 'Hotel not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ tvLayoutConfig: hotel.tv_layout_config });
+    return NextResponse.json({ 
+      tvLayoutConfig: hotel.tv_layout_config,
+      featuredImageUrl: hotel.featured_image_url 
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
   }
