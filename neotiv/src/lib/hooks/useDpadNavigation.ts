@@ -191,36 +191,9 @@ export function useDpadNavigation(options?: {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [enabled, handleKeyDown]);
 
-  // STB Cursor Snapping: Convert mousemove into focus navigation
-  // On Android STBs (e.g. ZTE B860H), the D-pad moves a system cursor
-  // which generates mousemove events. We intercept these and snap focus
-  // to the nearest widget, so the visual focus ring follows the cursor.
-  useEffect(() => {
-    if (!enabled) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      // Throttle to max ~10 times/sec for performance
-      const now = Date.now();
-      if (now - mouseThrottleRef.current < 100) return;
-      mouseThrottleRef.current = now;
-
-      const elements = getFocusableElements();
-      if (elements.length === 0) return;
-
-      const closest = findClosestToPoint(e.clientX, e.clientY, elements);
-      if (closest && closest !== document.activeElement) {
-        closest.focus();
-        currentIndexRef.current = elements.indexOf(closest);
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [enabled, getFocusableElements, findClosestToPoint]);
-
+    // We rely exclusively on D-pad keystrokes for focus traversal.
+    // Mouse movement is ignored to prevent "pixel-by-pixel" dragging issues 
+    // when STB remotes are accidentally placed in "mouse emulation" mode.
   // Aggressively capture initial state to disable TV virtual cursor mode
   useEffect(() => {
     if (!enabled) return;

@@ -265,15 +265,23 @@ export default function MainDashboardPage({ params }: { params: any }) {
   return (
       <div className="w-screen h-screen relative overflow-hidden bg-slate-900 tv-kiosk-mode"
         style={{ 
-          backgroundImage: `url(${bgUrl})`, 
-          backgroundSize: 'cover', 
-          backgroundPosition: 'center',
-          filter: displayFilter,
           '--widget-dark-opacity': config.theme?.opacityDark ?? 0.60,
           '--widget-light-opacity': config.theme?.opacityLight ?? 0.82,
           '--focus-color': config.theme?.focusColor ?? '#14b8a6',
           '--focus-style': config.theme?.focusStyle ?? 'outline'
         } as React.CSSProperties}>
+
+      {/* ===== BACKGROUND IMAGE ===== */}
+      <div 
+        className="absolute inset-0 z-0" 
+        style={{
+          backgroundImage: `url(${bgUrl})`, 
+          backgroundSize: 'cover', 
+          backgroundPosition: 'center',
+          filter: displayFilter,
+          transition: 'filter 0.3s ease-in-out'
+        }} 
+      />
 
       {/* ===== BENTO GRID — matches reference layout ===== */}
       <div className="absolute inset-0 grid gap-[0.6vw]" style={{
