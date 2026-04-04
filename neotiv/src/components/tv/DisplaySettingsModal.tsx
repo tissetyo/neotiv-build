@@ -91,6 +91,18 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
     onClose();
   }, [onClose]);
 
+  const handleLogout = useCallback(() => {
+    // Clear all configuration from local storage
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('neotiv_room_') || key === 'neotiv_stb_setup') {
+        localStorage.removeItem(key);
+      }
+    });
+    // Redirect to setup page
+    window.location.href = '/setup-stb';
+  }, []);
+
   if (!isOpen) return null;
 
   const sliders = [
@@ -196,12 +208,19 @@ export default function DisplaySettingsModal({ isOpen, onClose }: Props) {
             <div className="mt-[3vh] flex flex-col gap-[1vh] items-center">
               <button
                 onClick={handleApply}
-                className="w-full py-[1.2vh] rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-bold text-[1vw] transition-colors display-focusable focus:ring-4 focus:ring-teal-400/30"
+                className="w-full py-[1.2vh] rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-bold text-[1vw] transition-colors display-focusable focus:ring-4 focus:ring-teal-400/30 mb-[1vh]"
                 tabIndex={0}
               >
                 Apply Settings
               </button>
-              <p className="text-white/40 text-[0.6vw] text-center">Use D-pad to adjust. Press Escape to close without applying.</p>
+              <button
+                onClick={handleLogout}
+                className="w-full py-[1vh] rounded-xl bg-red-500/20 hover:bg-red-500/40 text-red-200 font-bold text-[0.85vw] transition-colors display-focusable focus:ring-4 focus:ring-red-400/30"
+                tabIndex={0}
+              >
+                Reset Setup (Logout)
+              </button>
+              <p className="text-white/40 text-[0.6vw] text-center mt-[1vh]">Use D-pad to adjust. Press Escape to close without applying.</p>
             </div>
           </motion.div>
         </motion.div>
