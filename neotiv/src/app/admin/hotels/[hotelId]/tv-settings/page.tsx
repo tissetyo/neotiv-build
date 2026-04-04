@@ -40,7 +40,8 @@ export default function TvSettingsPage({ params }: { params: Promise<{ hotelId: 
       hotelInfo: { visible: true },
       alarmWidget: { visible: true },
       chatWidget: { visible: true },
-      notifWidget: { visible: true }
+      notifWidget: { visible: true },
+      displayWidget: { visible: true }
     }
   };
 

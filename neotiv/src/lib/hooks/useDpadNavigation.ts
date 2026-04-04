@@ -6,6 +6,10 @@ import { useEffect, useCallback, useRef } from 'react';
  * D-pad spatial navigation hook for TV dashboard.
  * Manages keyboard-based focus traversal using ArrowUp/Down/Left/Right,
  * Enter for activation, and Escape for closing modals.
+ * 
+ * Also handles STB cursor snapping: when the Android system cursor
+ * moves via D-pad (generating mousemove events), this hook
+ * intercepts the movement and snaps focus to the nearest widget.
  */
 export function useDpadNavigation(options?: {
   enabled?: boolean;
@@ -14,6 +18,8 @@ export function useDpadNavigation(options?: {
 }) {
   const { enabled = true, onEscape, selector = '.tv-focusable' } = options || {};
   const currentIndexRef = useRef<number>(-1);
+  const lastMousePos = useRef<{ x: number; y: number } | null>(null);
+  const mouseThrottleRef = useRef<number>(0);
 
   const getFocusableElements = useCallback((): HTMLElement[] => {
     const elements = Array.from(document.querySelectorAll<HTMLElement>(selector));
@@ -103,6 +109,29 @@ export function useDpadNavigation(options?: {
     []
   );
 
+  /**
+   * Find the closest focusable element to a given point.
+   */
+  const findClosestToPoint = useCallback(
+    (x: number, y: number, elements: HTMLElement[]): HTMLElement | null => {
+      let best: HTMLElement | null = null;
+      let bestDist = Infinity;
+      for (const el of elements) {
+        const rect = el.getBoundingClientRect();
+        // Calculate distance from point to nearest edge of element
+        const cx = Math.max(rect.left, Math.min(x, rect.right));
+        const cy = Math.max(rect.top, Math.min(y, rect.bottom));
+        const dist = Math.hypot(x - cx, y - cy);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = el;
+        }
+      }
+      return best;
+    },
+    []
+  );
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!enabled) return;
@@ -162,11 +191,58 @@ export function useDpadNavigation(options?: {
     [enabled, getFocusableElements, findNearest, onEscape]
   );
 
+  // Keyboard handler
   useEffect(() => {
     if (!enabled) return;
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [enabled, handleKeyDown]);
+
+  // STB Cursor Snapping: Convert mousemove into focus navigation
+  // On Android STBs (e.g. ZTE B860H), the D-pad moves a system cursor
+  // which generates mousemove events. We intercept these and snap focus
+  // to the nearest widget, so the visual focus ring follows the cursor.
+  useEffect(() => {
+    if (!enabled) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Throttle to max ~10 times/sec for performance
+      const now = Date.now();
+      if (now - mouseThrottleRef.current < 100) return;
+      mouseThrottleRef.current = now;
+
+      const elements = getFocusableElements();
+      if (elements.length === 0) return;
+
+      const closest = findClosestToPoint(e.clientX, e.clientY, elements);
+      if (closest && closest !== document.activeElement) {
+        closest.focus();
+        currentIndexRef.current = elements.indexOf(closest);
+      }
+    };
+
+    // Also handle mouse click → trigger the focused element
+    const handleMouseClick = (e: MouseEvent) => {
+      const elements = getFocusableElements();
+      if (elements.length === 0) return;
+
+      const closest = findClosestToPoint(e.clientX, e.clientY, elements);
+      if (closest) {
+        e.preventDefault();
+        e.stopPropagation();
+        closest.focus();
+        closest.click();
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('click', handleMouseClick, true);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('click', handleMouseClick, true);
+    };
+  }, [enabled, getFocusableElements, findClosestToPoint]);
 
   // Aggressively capture initial state to disable TV virtual cursor mode
   useEffect(() => {

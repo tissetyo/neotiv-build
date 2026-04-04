@@ -49,26 +49,12 @@ export default function MainDashboardPage({ params }: { params: any }) {
 
   useDpadNavigation({ enabled: mounted && !activeModal && !launchApp, onEscape: handleEscape });
 
-  // KIOSK MODE: Prevent left-click mouse actions on dashboard
-  // Only D-pad Enter (which triggers .click()) should work.
-  // Mouse right-click is also blocked.
+  // Block right-click context menu on TV dashboard
   useEffect(() => {
     if (!mounted) return;
-    const blockMouse = (e: MouseEvent) => {
-      // Allow click events dispatched programmatically (from D-pad Enter)
-      if (!e.isTrusted) return;
-      // Block single left clicks from mouse
-      e.preventDefault();
-      e.stopPropagation();
-    };
     const blockContext = (e: MouseEvent) => { e.preventDefault(); };
-    // Use capture phase to intercept before anything else
-    document.addEventListener('click', blockMouse, true);
     document.addEventListener('contextmenu', blockContext, true);
-    return () => {
-      document.removeEventListener('click', blockMouse, true);
-      document.removeEventListener('contextmenu', blockContext, true);
-    };
+    return () => { document.removeEventListener('contextmenu', blockContext, true); };
   }, [mounted]);
 
   const { data: liveConfig } = useSWR(
@@ -223,7 +209,8 @@ export default function MainDashboardPage({ params }: { params: any }) {
       hotelInfo: { colStart: 9, colSpan: 3, rowStart: 11, rowSpan: 2, visible: true },
       alarmWidget: { colStart: 12, colSpan: 1, rowStart: 1, rowSpan: 1, visible: true, bgColor: '#f59e0b' },
       chatWidget: { colStart: 12, colSpan: 1, rowStart: 2, rowSpan: 1, visible: true, bgColor: '#14b8a6' },
-      notifWidget: { colStart: 12, colSpan: 1, rowStart: 3, rowSpan: 1, visible: true, bgColor: '#8b5cf6' }
+      notifWidget: { colStart: 12, colSpan: 1, rowStart: 3, rowSpan: 1, visible: true, bgColor: '#8b5cf6' },
+      displayWidget: { colStart: 12, colSpan: 1, rowStart: 4, rowSpan: 1, visible: true, bgColor: '#6366f1' }
     }
   };
   const config = (store.tvLayoutConfig && typeof store.tvLayoutConfig === 'object' ? store.tvLayoutConfig : defaultConfig) as any;
@@ -457,19 +444,17 @@ export default function MainDashboardPage({ params }: { params: any }) {
         )}
 
         {/* Display Settings Widget */}
-        <button 
-          onClick={() => handleAction('display')}
-          className="tv-app-card tv-focusable rounded-[var(--widget-radius)] flex flex-col items-center justify-center text-white group relative overflow-hidden widget-animate"
-          style={{ 
-            gridColumn: '12 / span 1', gridRow: '4 / span 1',
-            animationDelay: '650ms',
-            '--app-color': '#6366f1',
-          } as React.CSSProperties}
-          tabIndex={0}
-        >
-          <SlidersHorizontal size={20} className="group-hover:scale-110 transition-transform text-white/90" strokeWidth={2.5} />
-          <span className="text-[0.6vw] font-semibold mt-1">Display</span>
-        </button>
+        {config.layout?.displayWidget?.visible !== false && (
+          <button 
+            onClick={() => handleAction('display')}
+            className="tv-app-card tv-focusable rounded-[var(--widget-radius)] flex flex-col items-center justify-center text-white group relative overflow-hidden widget-animate"
+            style={getWidgetStyle('displayWidget', '650ms') as React.CSSProperties}
+            tabIndex={0}
+          >
+            <SlidersHorizontal size={20} className="group-hover:scale-110 transition-transform text-white/90" strokeWidth={2.5} />
+            <span className="text-[0.6vw] font-semibold mt-1">Display</span>
+          </button>
+        )}
       </div>
 
       {/* ===== MARQUEE BAR ===== */}
