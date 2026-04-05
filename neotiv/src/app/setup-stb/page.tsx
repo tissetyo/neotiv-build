@@ -72,13 +72,22 @@ export default function SetupSTBPage() {
   }, []);
 
   const handleSubmit = () => {
+    if (status === 'pairing') return;
     doPair(hotelSlug, roomCode);
   };
 
   // D-pad keyboard navigation between tabs and form fields
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const active = document.activeElement;
+      const active = document.activeElement as HTMLElement | null;
+
+      if (e.key === 'Enter' && active && active.tagName === 'BUTTON') {
+        e.preventDefault();
+        // The D-pad bridge only fires 'keydown', so native 'click' might not trigger.
+        // We manually call .click() here.
+        active.click();
+        return;
+      }
 
       // Tab switching with left/right when a tab is focused
       const tabIndex = tabRefs.current.indexOf(active as HTMLButtonElement);
@@ -89,7 +98,7 @@ export default function SetupSTBPage() {
         } else if (e.key === 'ArrowLeft' && tabIndex > 0) {
           e.preventDefault();
           tabRefs.current[tabIndex - 1]?.focus();
-        } else if (e.key === 'ArrowDown') {
+        } else if (e.key === 'ArrowDown' && hotelRef.current) {
           e.preventDefault();
           hotelRef.current?.focus();
         }
@@ -219,8 +228,8 @@ export default function SetupSTBPage() {
             <button
               ref={submitRef}
               onClick={handleSubmit}
-              disabled={!hotelSlug.trim() || !roomCode.trim() || status === 'pairing'}
               className={`stb-btn ${hotelSlug.trim() && roomCode.trim() ? 'stb-btn-active' : ''}`}
+              style={{ opacity: (!hotelSlug.trim() || !roomCode.trim() || status === 'pairing') ? 0.5 : 1 }}
               data-focusable="true"
             >
               {status === 'pairing' ? '⏳ Connecting...' : '📺 Connect Device'}
