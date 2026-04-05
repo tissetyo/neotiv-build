@@ -76,8 +76,8 @@ export default async function PortalPage({
                       <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>Released: April 2026</p>
                     </div>
                     <a href="/neotiv-stb-v1.4.0.apk" download="neotiv-stb-v1.4.0.apk"
-                       style={{ background: '#14b8a6', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
-                       Download
+                      style={{ background: '#14b8a6', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
+                      Download
                     </a>
                   </div>
                   <ul style={{ margin: 0, paddingLeft: '20px', color: '#cbd5e1', fontSize: '0.85rem', lineHeight: 1.6 }}>
@@ -99,8 +99,8 @@ export default async function PortalPage({
                       <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>Trusted Release</p>
                     </div>
                     <a href="/neotiv-stb.apk" download="neotiv-stb.apk"
-                       style={{ background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
-                       Download
+                      style={{ background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
+                      Download
                     </a>
                   </div>
                   <ul style={{ margin: 0, paddingLeft: '20px', color: '#cbd5e1', fontSize: '0.85rem', lineHeight: 1.6 }}>
@@ -118,8 +118,8 @@ export default async function PortalPage({
                       <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>Legacy TV Release</p>
                     </div>
                     <a href="/neotiv-stb-legacy.apk" download="neotiv-stb-legacy.apk"
-                       style={{ background: '#475569', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
-                       Download
+                      style={{ background: '#475569', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
+                      Download
                     </a>
                   </div>
                   <ul style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '0.85rem', lineHeight: 1.6 }}>
