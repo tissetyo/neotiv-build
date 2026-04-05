@@ -30,6 +30,15 @@ $$ LANGUAGE plpgsql;
 -- Disable RLS for this table (server-side only access via service role)
 ALTER TABLE stb_pairing_codes ENABLE ROW LEVEL SECURITY;
 
--- Allow service role full access
-CREATE POLICY "Service role full access" ON stb_pairing_codes
-  FOR ALL USING (true) WITH CHECK (true);
+-- Allow service role full access (check existence first)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'stb_pairing_codes' AND policyname = 'Service role full access'
+    ) THEN
+        CREATE POLICY "Service role full access" ON stb_pairing_codes
+          FOR ALL USING (true) WITH CHECK (true);
+    END IF;
+END
+$$;
