@@ -1,61 +1,57 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-
-type SetupMethod = 'remote' | 'adb' | 'qr';
+import { useRef, useEffect, useState } from 'react';
 
 export default function SetupSTBPage() {
-  const [method, setMethod] = useState<SetupMethod>('remote');
-  const [hotelSlug, setHotelSlug] = useState('');
-  const [roomCode, setRoomCode] = useState('');
-  const [status, setStatus] = useState<'idle' | 'pairing' | 'success' | 'error'>('idle');
-  const [errorMsg, setErrorMsg] = useState('');
   const [origin, setOrigin] = useState('');
+  const [paired, setPaired] = useState(false);
+  const [pairedSlug, setPairedSlug] = useState('');
+  const [pairedRoom, setPairedRoom] = useState('');
 
   const hotelRef = useRef<HTMLInputElement>(null);
   const roomRef = useRef<HTMLInputElement>(null);
-  const submitRef = useRef<HTMLButtonElement>(null);
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  // Check URL params for auto-pair (supports /setup-stb?hotel=xxx&room=yyy)
+  // Read tab from URL params (native <a> links handle tab switching)
+  const [tab, setTab] = useState('remote');
+
   useEffect(() => {
     setOrigin(window.location.origin);
     const params = new URLSearchParams(window.location.search);
+    const t = params.get('tab');
+    if (t === 'adb' || t === 'qr') setTab(t);
+
+    // Auto-pair from URL params
     const h = params.get('hotel');
     const r = params.get('room');
     if (h && r) {
-      setHotelSlug(h);
-      setRoomCode(r);
-      // Auto-pair after a brief delay so page renders
-      setTimeout(() => doPair(h, r), 500);
+      doPair(h, r);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
-  const doPair = useCallback((slug: string, room: string) => {
-    if (!slug.trim() || !room.trim()) {
-      setErrorMsg('Please fill in both fields');
-      setStatus('error');
-      return;
-    }
-
-    setStatus('pairing');
-    setErrorMsg('');
-
+  function doPair(slug: string, room: string) {
     const finalSlug = slug.trim().toLowerCase();
     const finalRoom = room.trim();
 
-    // Try native bridge first (running inside STB WebView)
+    if (!finalSlug || !finalRoom) {
+      alert('Please enter both Hotel ID and Room Code');
+      return;
+    }
+
+    // Try native bridge (running inside STB WebView)
     try {
       if (typeof (window as any).NeotivSetup !== 'undefined') {
         (window as any).NeotivSetup.onPaired(finalSlug, finalRoom);
-        setStatus('success');
+        setPaired(true);
+        setPairedSlug(finalSlug);
+        setPairedRoom(finalRoom);
         return;
       }
     } catch (e) {
       console.warn('[Neotiv] Bridge call failed:', e);
     }
 
-    // Fallback: save to localStorage (for browser testing / non-native)
+    // Fallback: save to localStorage
     try {
       localStorage.setItem('neotiv_stb_setup', JSON.stringify({
         hotelSlug: finalSlug,
@@ -63,42 +59,34 @@ export default function SetupSTBPage() {
       }));
     } catch {}
 
-    setStatus('success');
+    setPaired(true);
+    setPairedSlug(finalSlug);
+    setPairedRoom(finalRoom);
 
-    // Redirect to dashboard after a moment
+    // Redirect to dashboard
     setTimeout(() => {
       window.location.href = `/${finalSlug}/dashboard/${finalRoom}/main`;
     }, 2000);
-  }, []);
+  }
 
-  const handleSubmit = () => {
-    if (status === 'pairing') return;
-    doPair(hotelSlug, roomCode);
-  };
-
-  // NOTE: No custom keyboard handler needed!
-  // WebView's built-in spatial navigation handles D-pad focus for
-  // standard HTML elements (<button>, <input>) natively.
-  // Adding custom handlers with preventDefault() would BLOCK native behavior.
-
-
-  const methods: { key: SetupMethod; icon: string; label: string }[] = [
-    { key: 'remote', icon: '🎮', label: 'Remote Control' },
-    { key: 'adb', icon: '💻', label: 'ADB Command' },
-    { key: 'qr', icon: '📱', label: 'QR Pairing' },
-  ];
+  function handleFormSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const slug = hotelRef.current?.value || '';
+    const room = roomRef.current?.value || '';
+    doPair(slug, room);
+  }
 
   // ═══════════════ SUCCESS SCREEN ═══════════════
-  if (status === 'success') {
+  if (paired) {
     return (
       <div className="stb-page">
         <div className="stb-center">
           <div className="stb-success-icon">✓</div>
           <h1 className="stb-h1">Device Configured!</h1>
           <p className="stb-sub">
-            Hotel: <span className="stb-highlight">{hotelSlug}</span>
+            Hotel: <span className="stb-highlight">{pairedSlug}</span>
           </p>
-          <p className="stb-room">Room {roomCode}</p>
+          <p className="stb-room">Room {pairedRoom}</p>
           <div className="stb-box" style={{ marginTop: 24 }}>
             <p className="stb-sub">Launching dashboard...</p>
             <div className="stb-progress-track" style={{ marginTop: 12 }}>
@@ -120,77 +108,64 @@ export default function SetupSTBPage() {
         <h1 className="stb-h1">Neotiv STB Setup</h1>
         <p className="stb-sub" style={{ marginBottom: 20 }}>Choose a setup method</p>
 
-        {/* Method Tabs */}
+        {/* Method Tabs — native <a> links so WebView handles them reliably */}
         <div className="stb-tabs">
-          {methods.map((m, i) => (
-            <button
-              key={m.key}
-              ref={(el) => { tabRefs.current[i] = el; }}
-              className={`stb-tab ${method === m.key ? 'stb-tab-active' : ''}`}
-              onClick={() => setMethod(m.key)}
-              data-focusable="true"
-            >
-              <span className="stb-tab-icon">{m.icon}</span>
-              <span className="stb-tab-label">{m.label}</span>
-            </button>
-          ))}
+          <a href="?tab=remote" className={`stb-tab ${tab === 'remote' ? 'stb-tab-active' : ''}`}>
+            <span className="stb-tab-icon">🎮</span>
+            <span className="stb-tab-label">Remote Control</span>
+          </a>
+          <a href="?tab=adb" className={`stb-tab ${tab === 'adb' ? 'stb-tab-active' : ''}`}>
+            <span className="stb-tab-icon">💻</span>
+            <span className="stb-tab-label">ADB Command</span>
+          </a>
+          <a href="?tab=qr" className={`stb-tab ${tab === 'qr' ? 'stb-tab-active' : ''}`}>
+            <span className="stb-tab-icon">📱</span>
+            <span className="stb-tab-label">QR Pairing</span>
+          </a>
         </div>
 
         {/* ─── Remote Control Form ─── */}
-        {method === 'remote' && (
-          <div className="stb-panel">
+        {tab === 'remote' && (
+          <form ref={formRef} onSubmit={handleFormSubmit} className="stb-panel">
             <p className="stb-panel-desc">
               Use the remote control to enter your hotel details below.
-              Navigate with <span className="stb-key">▲▼</span> arrows, type with the on-screen keyboard.
             </p>
 
             <div className="stb-field">
-              <label className="stb-label">HOTEL ID</label>
+              <label htmlFor="hotel-input" className="stb-label">HOTEL ID</label>
               <input
+                id="hotel-input"
                 ref={hotelRef}
                 type="text"
-                value={hotelSlug}
-                onChange={(e) => { setHotelSlug(e.target.value); setStatus('idle'); }}
+                name="hotel"
                 placeholder="e.g. amartha-hotel"
                 className="stb-input"
-                data-focusable="true"
                 autoComplete="off"
               />
             </div>
 
             <div className="stb-field">
-              <label className="stb-label">ROOM CODE</label>
+              <label htmlFor="room-input" className="stb-label">ROOM CODE</label>
               <input
+                id="room-input"
                 ref={roomRef}
                 type="text"
-                value={roomCode}
-                onChange={(e) => { setRoomCode(e.target.value); setStatus('idle'); }}
+                name="room"
                 placeholder="e.g. 101"
                 className="stb-input"
-                data-focusable="true"
                 autoComplete="off"
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
               />
             </div>
 
-            {status === 'error' && errorMsg && (
-              <div className="stb-error">{errorMsg}</div>
-            )}
-
-            <button
-              ref={submitRef}
-              onClick={handleSubmit}
-              className={`stb-btn ${hotelSlug.trim() && roomCode.trim() ? 'stb-btn-active' : ''}`}
-              style={{ opacity: (!hotelSlug.trim() || !roomCode.trim() || status === 'pairing') ? 0.5 : 1 }}
-              data-focusable="true"
-            >
-              {status === 'pairing' ? '⏳ Connecting...' : '📺 Connect Device'}
+            {/* Always green, always clickable. Validation on submit. */}
+            <button type="submit" className="stb-btn">
+              📺 Connect Device
             </button>
-          </div>
+          </form>
         )}
 
         {/* ─── ADB Command ─── */}
-        {method === 'adb' && (
+        {tab === 'adb' && (
           <div className="stb-panel">
             <p className="stb-panel-desc">
               For bulk provisioning, use ADB to configure the device without any UI interaction.
@@ -200,24 +175,23 @@ export default function SetupSTBPage() {
               <div className="stb-code-header">Terminal Command</div>
               <pre className="stb-pre">{`adb shell am start \\
   -n com.neotiv.stb/.SetupActivity \\
-  --es hotel_slug "your-hotel-slug" \\
+  --es hotel_slug "your-hotel" \\
   --es room_code "101"`}</pre>
             </div>
 
             <div className="stb-code-block" style={{ marginTop: 12 }}>
-              <div className="stb-code-header">URL Parameter (Browser)</div>
-              <pre className="stb-pre">{`${origin || 'https://your-domain.com'}/setup-stb?hotel=your-hotel-slug&room=101`}</pre>
+              <div className="stb-code-header">URL Parameter</div>
+              <pre className="stb-pre">{`${origin || 'https://your-domain.com'}/setup-stb?hotel=your-hotel&room=101`}</pre>
             </div>
 
             <div className="stb-info-box">
-              <span className="stb-info-icon">💡</span>
-              <span>The ADB method works immediately — no Wi-Fi setup page needed. Perfect for provisioning multiple devices.</span>
+              💡 The ADB method works immediately — perfect for provisioning multiple devices.
             </div>
           </div>
         )}
 
         {/* ─── QR Pairing (Coming Soon) ─── */}
-        {method === 'qr' && (
+        {tab === 'qr' && (
           <div className="stb-panel">
             <div className="stb-coming-soon">
               <div className="stb-qr-placeholder">
@@ -237,15 +211,6 @@ export default function SetupSTBPage() {
             </div>
           </div>
         )}
-
-        {/* Footer hint */}
-        <div className="stb-footer">
-          <span className="stb-key">◀ ▶</span> Switch tab
-          <span className="stb-sep">·</span>
-          <span className="stb-key">▲ ▼</span> Navigate
-          <span className="stb-sep">·</span>
-          <span className="stb-key">OK</span> Select
-        </div>
       </div>
       <style>{css}</style>
     </div>
@@ -283,7 +248,7 @@ const css = `
   .stb-highlight { color: #5eead4; font-weight: 600; }
   .stb-room { font-size: 2.5rem; font-weight: 700; color: #14b8a6; margin-top: 8px; }
 
-  /* ─── Tabs ─── */
+  /* ─── Tabs (native <a> links) ─── */
   .stb-tabs {
     display: flex; gap: 6px; margin-bottom: 16px;
     background: rgba(255,255,255,0.03);
@@ -296,6 +261,7 @@ const css = `
     background: transparent; border-radius: 10px; cursor: pointer;
     color: #64748b; transition: all 0.2s ease;
     display: flex; flex-direction: column; align-items: center; gap: 4px;
+    text-decoration: none;
   }
   .stb-tab:focus {
     outline: none; border-color: #14b8a6;
@@ -314,7 +280,6 @@ const css = `
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 16px; padding: 20px;
     text-align: left;
-    animation: fadeIn 0.2s ease;
   }
 
   .stb-panel-desc {
@@ -342,26 +307,18 @@ const css = `
   }
   .stb-input::placeholder { color: #475569; }
 
+  /* Button — ALWAYS green, no conditional styling */
   .stb-btn {
     width: 100%; padding: 14px; font-size: 1rem; font-weight: 600;
-    background: rgba(255,255,255,0.06); color: #64748b;
-    border: 2px solid transparent; border-radius: 12px; cursor: pointer;
-    transition: all 0.2s ease; margin-top: 4px;
-  }
-  .stb-btn-active {
-    background: linear-gradient(135deg, #14b8a6, #0d9488); color: white;
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
+    color: white; border: 2px solid transparent;
+    border-radius: 12px; cursor: pointer;
     box-shadow: 0 4px 16px rgba(20,184,166,0.3);
+    margin-top: 4px;
   }
   .stb-btn:focus {
     outline: none; border-color: #5eead4;
     box-shadow: 0 0 0 3px rgba(20,184,166,0.3);
-  }
-  .stb-btn:disabled { opacity: 0.5; cursor: default; }
-
-  .stb-error {
-    background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25);
-    border-radius: 10px; padding: 10px 14px; color: #fca5a5;
-    font-size: 0.8rem; margin-bottom: 12px; text-align: center;
   }
 
   /* ─── ADB Code Block ─── */
@@ -383,12 +340,10 @@ const css = `
   }
 
   .stb-info-box {
-    margin-top: 14px; padding: 12px 14px; display: flex; gap: 10px;
+    margin-top: 14px; padding: 12px 14px;
     background: rgba(20,184,166,0.08); border: 1px solid rgba(20,184,166,0.15);
     border-radius: 10px; color: #94a3b8; font-size: 0.75rem; line-height: 1.5;
-    align-items: flex-start;
   }
-  .stb-info-icon { font-size: 1rem; flex-shrink: 0; }
 
   /* ─── QR Coming Soon ─── */
   .stb-coming-soon { text-align: center; padding: 16px 0; }
@@ -424,21 +379,6 @@ const css = `
     color: #fbbf24; font-size: 0.7rem; font-weight: 600;
   }
 
-  /* ─── D-pad hint keys ─── */
-  .stb-key {
-    display: inline-block; padding: 2px 7px; font-size: 0.65rem;
-    background: rgba(255,255,255,0.08); border-radius: 4px;
-    color: #94a3b8; font-weight: 600; margin: 0 2px;
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-
-  /* ─── Footer ─── */
-  .stb-footer {
-    margin-top: 20px; color: #475569; font-size: 0.7rem;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-  }
-  .stb-sep { color: #334155; }
-
   /* ─── Success ─── */
   .stb-success-icon {
     width: 80px; height: 80px; border-radius: 50%;
@@ -460,13 +400,11 @@ const css = `
   }
   .stb-progress-bar {
     height: 100%; border-radius: 3px; background: #14b8a6;
-    transition: width 1s linear;
   }
   .stb-progress-anim {
     animation: progress 2s ease-in-out forwards;
   }
 
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   @keyframes progress { from { width: 0%; } to { width: 100%; } }
 
