@@ -48,7 +48,9 @@ export default function PortalPage() {
             {/* Guest Card */}
             <button
               onClick={() => { setMode('guest'); setError(''); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setMode('guest'); setError(''); } }}
               className="portal-card"
+              tabIndex={0}
             >
               <div className="portal-card-icon" style={{ background: 'rgba(20,184,166,0.15)' }}>📺</div>
               <h2 className="portal-card-title">Room TV Dashboard</h2>
@@ -58,15 +60,17 @@ export default function PortalPage() {
             {/* Staff Card */}
             <button
               onClick={() => { setMode('staff'); setError(''); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setMode('staff'); setError(''); } }}
               className="portal-card"
+              tabIndex={0}
             >
               <div className="portal-card-icon" style={{ background: 'rgba(99,102,241,0.15)' }}>🏨</div>
               <h2 className="portal-card-title">Hotel Staff Portal</h2>
               <p className="portal-card-desc">Front office operations, hotel management, and guest services</p>
             </button>
 
-            {/* STB Setup Card */}
-            <a href="/neotiv-stb.apk" download="neotiv-stb.apk" className="portal-card" style={{ textDecoration: 'none' }}>
+            {/* STB Setup Card - APPEND ?v=Date.now() to bust aggressive TV browser cache */}
+            <a href={`/neotiv-stb.apk?v=${Date.now()}`} download="neotiv-stb.apk" className="portal-card" style={{ textDecoration: 'none' }} tabIndex={0}>
               <div className="portal-card-icon" style={{ background: 'rgba(245,158,11,0.15)' }}>📥</div>
               <h2 className="portal-card-title">Download STB App</h2>
               <p className="portal-card-desc">Download & install the Neotiv TV app, then scan QR to pair with a room</p>
@@ -203,10 +207,18 @@ export default function PortalPage() {
           text-align: left;
           color: white;
           cursor: pointer;
-          transition: transform 0.2s;
+          transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
           display: block;
+          outline: none; /* Removed default outline to use custom */
         }
-        .portal-card:hover { transform: scale(1.02); }
+        .portal-card:hover, .portal-card:focus { 
+          transform: scale(1.02); 
+          border-color: rgba(255,255,255,0.4);
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        .portal-card:focus {
+           border-color: #14b8a6; /* Teal highlight when focused via remote */
+        }
         .portal-card-icon {
           width: 48px; height: 48px; border-radius: 12px;
           display: flex; align-items: center; justify-content: center;
