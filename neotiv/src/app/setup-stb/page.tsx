@@ -1,114 +1,35 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useRef, useEffect, useState } from 'react';
+export default function SetupSTBPage({
+  searchParams,
+}: {
+  searchParams: { tab?: string; hotel?: string; room?: string };
+}) {
+  const tab = searchParams.tab || 'remote';
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://your-domain.com';
 
-export default function SetupSTBPage() {
-  const [origin, setOrigin] = useState('');
-  const [paired, setPaired] = useState(false);
-  const [pairedSlug, setPairedSlug] = useState('');
-  const [pairedRoom, setPairedRoom] = useState('');
-
-  const hotelRef = useRef<HTMLInputElement>(null);
-  const roomRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-
-  // Read tab from URL params (native <a> links handle tab switching)
-  const [tab, setTab] = useState('remote');
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-    const params = new URLSearchParams(window.location.search);
-    const t = params.get('tab');
-    if (t === 'adb' || t === 'qr') setTab(t);
-
-    // Auto-pair from URL params
-    const h = params.get('hotel');
-    const r = params.get('room');
-    if (h && r) {
-      doPair(h, r);
-    }
-  }, []);
-
-  function doPair(slug: string, room: string) {
-    const finalSlug = slug.trim().toLowerCase();
-    const finalRoom = room.trim();
-
-    if (!finalSlug || !finalRoom) {
-      alert('Please enter both Hotel ID and Room Code');
-      return;
-    }
-
-    // Try native bridge (running inside STB WebView)
+  // If auto-pair params exist, we can just render a script that pair immediately
+  const autoPairScript = (searchParams.hotel && searchParams.room) ? `
     try {
-      if (typeof (window as any).NeotivSetup !== 'undefined') {
-        (window as any).NeotivSetup.onPaired(finalSlug, finalRoom);
-        setPaired(true);
-        setPairedSlug(finalSlug);
-        setPairedRoom(finalRoom);
-        return;
+      if (typeof window.NeotivSetup !== 'undefined') {
+        window.NeotivSetup.onPaired("${searchParams.hotel}", "${searchParams.room}");
       }
-    } catch (e) {
-      console.warn('[Neotiv] Bridge call failed:', e);
-    }
-
-    // Fallback: save to localStorage
-    try {
-      localStorage.setItem('neotiv_stb_setup', JSON.stringify({
-        hotelSlug: finalSlug,
-        roomCode: finalRoom,
-      }));
-    } catch {}
-
-    setPaired(true);
-    setPairedSlug(finalSlug);
-    setPairedRoom(finalRoom);
-
-    // Redirect to dashboard
-    setTimeout(() => {
-      window.location.href = `/${finalSlug}/dashboard/${finalRoom}/main`;
+    } catch(e) {}
+    setTimeout(function() {
+      window.location.href = '/${searchParams.hotel}/dashboard/${searchParams.room}/main';
     }, 2000);
-  }
+  ` : '';
 
-  function handleFormSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const slug = hotelRef.current?.value || '';
-    const room = roomRef.current?.value || '';
-    doPair(slug, room);
-  }
-
-  // ═══════════════ SUCCESS SCREEN ═══════════════
-  if (paired) {
-    return (
-      <div className="stb-page">
-        <div className="stb-center">
-          <div className="stb-success-icon">✓</div>
-          <h1 className="stb-h1">Device Configured!</h1>
-          <p className="stb-sub">
-            Hotel: <span className="stb-highlight">{pairedSlug}</span>
-          </p>
-          <p className="stb-room">Room {pairedRoom}</p>
-          <div className="stb-box" style={{ marginTop: 24 }}>
-            <p className="stb-sub">Launching dashboard...</p>
-            <div className="stb-progress-track" style={{ marginTop: 12 }}>
-              <div className="stb-progress-bar stb-progress-anim" />
-            </div>
-          </div>
-        </div>
-        <style>{css}</style>
-      </div>
-    );
-  }
-
-  // ═══════════════ MAIN SETUP SCREEN ═══════════════
   return (
     <div className="stb-page">
-      <div className="stb-center">
+      {/* ═══════════════ MAIN UI ═══════════════ */}
+      <div id="main-ui" className="stb-center" style={{ display: autoPairScript ? 'none' : 'block' }}>
         {/* Header */}
         <div className="stb-logo">N</div>
         <h1 className="stb-h1">Neotiv STB Setup</h1>
         <p className="stb-sub" style={{ marginBottom: 20 }}>Choose a setup method</p>
 
-        {/* Method Tabs — native <a> links so WebView handles them reliably */}
+        {/* Method Tabs — native <a> links */}
         <div className="stb-tabs">
           <a href="?tab=remote" className={`stb-tab ${tab === 'remote' ? 'stb-tab-active' : ''}`}>
             <span className="stb-tab-icon">🎮</span>
@@ -126,7 +47,7 @@ export default function SetupSTBPage() {
 
         {/* ─── Remote Control Form ─── */}
         {tab === 'remote' && (
-          <form ref={formRef} onSubmit={handleFormSubmit} className="stb-panel">
+          <form id="setup-form" className="stb-panel" action="javascript:void(0);">
             <p className="stb-panel-desc">
               Use the remote control to enter your hotel details below.
             </p>
@@ -135,7 +56,6 @@ export default function SetupSTBPage() {
               <label htmlFor="hotel-input" className="stb-label">HOTEL ID</label>
               <input
                 id="hotel-input"
-                ref={hotelRef}
                 type="text"
                 name="hotel"
                 placeholder="e.g. amartha-hotel"
@@ -148,7 +68,6 @@ export default function SetupSTBPage() {
               <label htmlFor="room-input" className="stb-label">ROOM CODE</label>
               <input
                 id="room-input"
-                ref={roomRef}
                 type="text"
                 name="room"
                 placeholder="e.g. 101"
@@ -157,7 +76,6 @@ export default function SetupSTBPage() {
               />
             </div>
 
-            {/* Always green, always clickable. Validation on submit. */}
             <button type="submit" className="stb-btn">
               📺 Connect Device
             </button>
@@ -181,7 +99,7 @@ export default function SetupSTBPage() {
 
             <div className="stb-code-block" style={{ marginTop: 12 }}>
               <div className="stb-code-header">URL Parameter</div>
-              <pre className="stb-pre">{`${origin || 'https://your-domain.com'}/setup-stb?hotel=your-hotel&room=101`}</pre>
+              <pre className="stb-pre">{`${origin}/setup-stb?hotel=your-hotel&room=101`}</pre>
             </div>
 
             <div className="stb-info-box">
@@ -205,14 +123,68 @@ export default function SetupSTBPage() {
               <p className="stb-sub">Coming Soon</p>
               <p className="stb-panel-desc" style={{ marginTop: 12 }}>
                 Scan a QR code from your phone to instantly pair this device to a room.
-                No typing required.
               </p>
               <div className="stb-badge">🚧 In Development</div>
             </div>
           </div>
         )}
       </div>
+
+      {/* ═══════════════ SUCCESS UI (Initially Hidden) ═══════════════ */}
+      <div id="success-ui" className="stb-center" style={{ display: autoPairScript ? 'block' : 'none' }}>
+        <div className="stb-success-icon">✓</div>
+        <h1 className="stb-h1">Device Configured!</h1>
+        <p className="stb-sub">
+          Hotel: <span id="success-hotel" className="stb-highlight">{searchParams.hotel || ''}</span>
+        </p>
+        <p id="success-room" className="stb-room">Room {searchParams.room || ''}</p>
+        <div className="stb-box" style={{ marginTop: 24 }}>
+          <p className="stb-sub">Launching dashboard...</p>
+          <div className="stb-progress-track" style={{ marginTop: 12 }}>
+            <div className="stb-progress-bar stb-progress-anim" />
+          </div>
+        </div>
+      </div>
+
       <style>{css}</style>
+
+      {/* VANILLA JAVASCRIPT: Bypasses Next.js and fully works on old Android TV browsers */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        ${autoPairScript}
+        
+        var form = document.getElementById('setup-form');
+        if (form) {
+          form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            var h = document.getElementById('hotel-input').value.trim().toLowerCase();
+            var r = document.getElementById('room-input').value.trim();
+            
+            if (!h || !r) {
+              alert('Please enter both Hotel ID and Room Code');
+              return;
+            }
+            
+            // Show Success UI Natively
+            document.getElementById('main-ui').style.display = 'none';
+            document.getElementById('success-ui').style.display = 'block';
+            document.getElementById('success-hotel').innerText = h;
+            document.getElementById('success-room').innerText = 'Room ' + r;
+            
+            // Trigger Kotlin Setup Bridge
+            try {
+              if (typeof window.NeotivSetup !== 'undefined') {
+                window.NeotivSetup.onPaired(h, r);
+              }
+            } catch(e) {}
+            
+            // Fallback Dashboard Redirect
+            setTimeout(function() {
+              window.location.href = '/' + h + '/dashboard/' + r + '/main';
+            }, 2000);
+          });
+        }
+      `}} />
     </div>
   );
 }
@@ -248,7 +220,7 @@ const css = `
   .stb-highlight { color: #5eead4; font-weight: 600; }
   .stb-room { font-size: 2.5rem; font-weight: 700; color: #14b8a6; margin-top: 8px; }
 
-  /* ─── Tabs (native <a> links) ─── */
+  /* Tabs */
   .stb-tabs {
     display: flex; gap: 6px; margin-bottom: 16px;
     background: rgba(255,255,255,0.03);
@@ -274,7 +246,7 @@ const css = `
   .stb-tab-icon { font-size: 1.2rem; }
   .stb-tab-label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
-  /* ─── Panel ─── */
+  /* Panel */
   .stb-panel {
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.06);
@@ -287,7 +259,7 @@ const css = `
     margin-bottom: 16px;
   }
 
-  /* ─── Form ─── */
+  /* Form */
   .stb-field { margin-bottom: 14px; }
   .stb-label {
     display: block; color: #64748b; font-size: 0.7rem;
@@ -307,7 +279,6 @@ const css = `
   }
   .stb-input::placeholder { color: #475569; }
 
-  /* Button — ALWAYS green, no conditional styling */
   .stb-btn {
     width: 100%; padding: 14px; font-size: 1rem; font-weight: 600;
     background: linear-gradient(135deg, #14b8a6, #0d9488);
@@ -315,13 +286,14 @@ const css = `
     border-radius: 12px; cursor: pointer;
     box-shadow: 0 4px 16px rgba(20,184,166,0.3);
     margin-top: 4px;
+    display: block; text-align: center;
   }
   .stb-btn:focus {
     outline: none; border-color: #5eead4;
     box-shadow: 0 0 0 3px rgba(20,184,166,0.3);
   }
 
-  /* ─── ADB Code Block ─── */
+  /* Code Block */
   .stb-code-block {
     background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
     border-radius: 12px; overflow: hidden;
@@ -345,7 +317,7 @@ const css = `
     border-radius: 10px; color: #94a3b8; font-size: 0.75rem; line-height: 1.5;
   }
 
-  /* ─── QR Coming Soon ─── */
+  /* QR Coming Soon */
   .stb-coming-soon { text-align: center; padding: 16px 0; }
 
   .stb-qr-placeholder {
@@ -371,7 +343,6 @@ const css = `
   .stb-qr-cell:nth-child(2), .stb-qr-cell:nth-child(4), .stb-qr-cell:nth-child(6), .stb-qr-cell:nth-child(8) {
     background: transparent;
   }
-
   .stb-badge {
     display: inline-block; margin-top: 16px;
     padding: 6px 14px; border-radius: 20px;
@@ -379,7 +350,7 @@ const css = `
     color: #fbbf24; font-size: 0.7rem; font-weight: 600;
   }
 
-  /* ─── Success ─── */
+  /* Success UI */
   .stb-success-icon {
     width: 80px; height: 80px; border-radius: 50%;
     background: linear-gradient(135deg, #14b8a6, #10b981);
@@ -388,12 +359,10 @@ const css = `
     box-shadow: 0 8px 30px rgba(20,184,166,0.4);
     animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-
   .stb-box {
     background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
     border-radius: 14px; padding: 16px;
   }
-
   .stb-progress-track {
     width: 100%; height: 5px; border-radius: 3px;
     background: rgba(255,255,255,0.1); overflow: hidden;
