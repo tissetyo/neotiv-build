@@ -13,30 +13,39 @@ function generateCode(): string {
 
 export async function POST(): Promise<NextResponse> {
   try {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({ error: 'Server configuration error (missing Service Role Key)' }, { status: 500 });
+    }
+
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
     // Expire any old pending codes
-    await supabase
+    const { error: cleanupError } = await supabase
       .from('stb_pairing_codes')
       .update({ status: 'expired' })
       .eq('status', 'pending')
       .lt('expires_at', new Date().toISOString());
+
+    if (cleanupError && cleanupError.code === 'PGRST116') {
+      // Table might not exist or be empty, handled later
+    }
 
     // Generate unique code with retry
     let code = '';
     let attempts = 0;
     while (attempts < 5) {
       code = generateCode();
-      const { data: existing } = await supabase
+      const { data: existing, error: checkError } = await supabase
         .from('stb_pairing_codes')
         .select('id')
         .eq('code', code)
         .eq('status', 'pending')
-        .single();
+        .maybeSingle(); // Better than single() which errors if 0 found
       
+      if (checkError) throw checkError;
       if (!existing) break;
       attempts++;
     }
@@ -54,20 +63,23 @@ export async function POST(): Promise<NextResponse> {
         status: 'pending',
         expires_at: expiresAt,
       })
-      .select()
+      .select('code, expires_at')
       .single();
 
-    if (error) {
+    if (error || !data) {
       console.error('Generate code error:', error);
-      return NextResponse.json({ error: 'Failed to create pairing code' }, { status: 500 });
+      const msg = error?.message?.includes('relation "stb_pairing_codes" does not exist')
+        ? 'Database table "stb_pairing_codes" missing. Please run the migration.'
+        : 'Failed to create pairing code in database.';
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
 
     return NextResponse.json({
       code: data.code,
       expiresAt: data.expires_at,
     });
-  } catch (err) {
-    console.error('Generate code error:', err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  } catch (err: any) {
+    console.error('Generate code server error:', err);
+    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
   }
 }

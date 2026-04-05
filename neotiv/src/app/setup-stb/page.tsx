@@ -23,14 +23,16 @@ export default function SetupSTBPage() {
   // Generate pairing code
   const generateCode = useCallback(async () => {
     setError('');
+    setStep('loading');
     try {
       const res = await fetch('/api/stb/generate-code', { method: 'POST' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || 'Failed to generate code');
       setPairingCode(data.code);
       setExpiresAt(data.expiresAt);
       setStep('qr');
     } catch (err: any) {
+      console.error('QR Generate Error:', err);
       setError(err.message || 'Failed to generate code. Check server connection.');
     }
   }, []);
