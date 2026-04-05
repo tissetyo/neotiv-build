@@ -11,8 +11,8 @@ android {
         applicationId = "com.neotiv.stb"
         minSdk = 21
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 4
+        versionName = "1.2.1"
 
         // ═══════════════════════════════════════════════
         // SET YOUR NEOTIV DOMAIN HERE — this is baked into the APK
