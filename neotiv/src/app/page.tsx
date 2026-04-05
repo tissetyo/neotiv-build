@@ -1,44 +1,88 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function PortalPage() {
+function PortalContent() {
   const router = useRouter();
-  const [mode, setMode] = useState<'choose' | 'guest' | 'staff' | 'downloads'>('choose');
+  const searchParams = useSearchParams();
+
+  // Read mode from URL query param — this makes <a href="?mode=guest"> work
+  // even when JS hydration fails (the page will reload with the correct mode)
+  const urlMode = searchParams.get('mode') as 'guest' | 'staff' | 'downloads' | null;
+  const mode = urlMode || 'choose';
+
   const [hotelSlug, setHotelSlug] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState('');
 
-  useDpadNavigation({
-    selector: '.portal-card, .portal-back-btn, .portal-input, .portal-submit-btn, a[download]',
-  });
-
+  // Auto-focus the first interactive element for D-pad navigation
   useEffect(() => {
-    // Automatically focus the first focusable element when the mode changes
-    // This removes the need to press an arrow key before clicking "Enter" on STBs!
     const timer = setTimeout(() => {
-      const firstValid = document.querySelector('.portal-card, .portal-back-btn, .portal-input') as HTMLElement;
-      if (firstValid) firstValid.focus();
-    }, 100);
+      const firstEl = document.querySelector('.portal-card, .portal-back-btn, .portal-input') as HTMLElement;
+      if (firstEl) firstEl.focus();
+    }, 200);
     return () => clearTimeout(timer);
   }, [mode]);
 
-  const handleGuestGo = () => {
+  // Simple D-pad keyboard handler directly on the page (no complex hook needed)
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const focusable = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          'a.portal-card, a.portal-back-btn, .portal-input, .portal-submit-btn, a[download]'
+        )
+      ).filter(el => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      });
+
+      if (focusable.length === 0) return;
+
+      const active = document.activeElement as HTMLElement;
+      const currentIdx = focusable.indexOf(active);
+
+      const isUp = e.key === 'ArrowUp' || e.keyCode === 38 || e.keyCode === 19;
+      const isDown = e.key === 'ArrowDown' || e.keyCode === 40 || e.keyCode === 20;
+      const isLeft = e.key === 'ArrowLeft' || e.keyCode === 37 || e.keyCode === 21;
+      const isRight = e.key === 'ArrowRight' || e.keyCode === 39 || e.keyCode === 22;
+      const isEnter = e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 66 || e.keyCode === 23;
+
+      if (isUp || isLeft) {
+        e.preventDefault();
+        const next = currentIdx > 0 ? currentIdx - 1 : focusable.length - 1;
+        focusable[next]?.focus();
+      } else if (isDown || isRight) {
+        e.preventDefault();
+        const next = currentIdx < focusable.length - 1 ? currentIdx + 1 : 0;
+        focusable[next]?.focus();
+      } else if (isEnter && active) {
+        e.preventDefault();
+        active.click();
+      }
+    };
+
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
+  const handleGuestGo = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!hotelSlug.trim() || !roomCode.trim()) {
       setError('Please fill in both fields');
       return;
     }
-    router.push(`/${hotelSlug.trim().toLowerCase()}/dashboard/${roomCode.trim()}`);
+    // Use window.location for maximum compatibility
+    window.location.href = `/${hotelSlug.trim().toLowerCase()}/dashboard/${roomCode.trim()}`;
   };
 
-  const handleStaffGo = () => {
+  const handleStaffGo = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!hotelSlug.trim()) {
       setError('Please enter your hotel identifier');
       return;
     }
-    router.push(`/${hotelSlug.trim().toLowerCase()}/login`);
+    window.location.href = `/${hotelSlug.trim().toLowerCase()}/login`;
   };
 
   return (
@@ -57,44 +101,29 @@ export default function PortalPage() {
           <p className="portal-tagline">Smart Hospitality Platform</p>
         </div>
 
-        {/* CHOOSE MODE */}
+        {/* CHOOSE MODE — Uses <a> tags for zero-JS compatibility */}
         {mode === 'choose' && (
           <div className="portal-cards">
-            {/* Guest Card */}
-            <button
-              onClick={() => { setMode('guest'); setError(''); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setMode('guest'); setError(''); } }}
-              className="portal-card"
-              tabIndex={0}
-            >
+            {/* Guest Card — Pure HTML link, works even without JS */}
+            <a href="?mode=guest" className="portal-card" tabIndex={0}>
               <div className="portal-card-icon" style={{ background: 'rgba(20,184,166,0.15)' }}>📺</div>
               <h2 className="portal-card-title">Room TV Dashboard</h2>
               <p className="portal-card-desc">Access your in-room entertainment, services, and hotel information</p>
-            </button>
+            </a>
 
             {/* Staff Card */}
-            <button
-              onClick={() => { setMode('staff'); setError(''); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setMode('staff'); setError(''); } }}
-              className="portal-card"
-              tabIndex={0}
-            >
+            <a href="?mode=staff" className="portal-card" tabIndex={0}>
               <div className="portal-card-icon" style={{ background: 'rgba(99,102,241,0.15)' }}>🏨</div>
               <h2 className="portal-card-title">Hotel Staff Portal</h2>
               <p className="portal-card-desc">Front office operations, hotel management, and guest services</p>
-            </button>
+            </a>
 
-            {/* STB Setup Card - Opens Version Menu */}
-            <button
-              onClick={() => { setMode('downloads'); setError(''); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setMode('downloads'); setError(''); } }}
-              className="portal-card"
-              tabIndex={0}
-            >
+            {/* STB Download Card */}
+            <a href="?mode=downloads" className="portal-card" tabIndex={0}>
                <div className="portal-card-icon" style={{ background: 'rgba(245,158,11,0.15)' }}>📥</div>
                <h2 className="portal-card-title">Download STB App</h2>
                <p className="portal-card-desc">View and download the latest Neotiv TV setups for specific hardware</p>
-            </button>
+            </a>
           </div>
         )}
 
@@ -103,7 +132,7 @@ export default function PortalPage() {
           <div className="portal-form-wrap" style={{ maxWidth: '600px' }}>
             <div className="portal-form-card" style={{ textAlign: 'left' }}>
               <div className="portal-form-header">
-                <button onClick={() => { setMode('choose'); setError(''); }} className="portal-back-btn" tabIndex={0}>←</button>
+                <a href="/" className="portal-back-btn" tabIndex={0}>←</a>
                 <h2 className="portal-form-title">STB App Downloads</h2>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -118,14 +147,14 @@ export default function PortalPage() {
                       </h3>
                       <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>Released: April 2026</p>
                     </div>
-                    <a href={`/neotiv-stb-v1.4.0.apk?v=${Date.now()}`} download="neotiv-stb-v1.4.0.apk" 
-                       style={{ background: '#14b8a6', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                    <a href="/neotiv-stb-v1.4.0.apk" download="neotiv-stb-v1.4.0.apk" 
+                       style={{ background: '#14b8a6', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
                        Download
                     </a>
                   </div>
                   <ul style={{ margin: 0, paddingLeft: '20px', color: '#cbd5e1', fontSize: '0.85rem', lineHeight: 1.6 }}>
                     <li>✅ <b>Fixes Black Screen</b> on older rooted Android 6/7 TV Boxes (removes forced hardware acceleration).</li>
-                    <li>✅ <b>Fixes Greyed-Out "Open" Button</b> on Generic Android 12 firmwares (Signed PROD Release).</li>
+                    <li>✅ <b>Fixes Greyed-Out &quot;Open&quot; Button</b> on Generic Android 12 firmwares (Signed PROD Release).</li>
                     <li>✅ Better stability and generic AOSP compatability.</li>
                     <li><i>Recommended for all new setups.</i></li>
                   </ul>
@@ -141,8 +170,8 @@ export default function PortalPage() {
                       </h3>
                       <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>Trusted Release</p>
                     </div>
-                    <a href={`/neotiv-stb.apk?v=${Date.now()}`} download="neotiv-stb.apk" 
-                       style={{ background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                    <a href="/neotiv-stb.apk" download="neotiv-stb.apk" 
+                       style={{ background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
                        Download
                     </a>
                   </div>
@@ -160,8 +189,8 @@ export default function PortalPage() {
                       <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', fontWeight: 600 }}>Neotiv Dashboard v1.1.0</h3>
                       <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>Legacy TV Release</p>
                     </div>
-                    <a href={`/neotiv-stb-legacy.apk?v=${Date.now()}`} download="neotiv-stb-legacy.apk" 
-                       style={{ background: '#475569', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                    <a href="/neotiv-stb-legacy.apk" download="neotiv-stb-legacy.apk" 
+                       style={{ background: '#475569', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0 }}>
                        Download
                     </a>
                   </div>
@@ -177,31 +206,30 @@ export default function PortalPage() {
           </div>
         )}
 
-        {/* GUEST MODE */}
+        {/* GUEST MODE — Uses native <form> for maximum compatibility */}
         {mode === 'guest' && (
           <div className="portal-form-wrap">
             <div className="portal-form-card">
               <div className="portal-form-header">
-                <button onClick={() => { setMode('choose'); setError(''); }} className="portal-back-btn">←</button>
+                <a href="/" className="portal-back-btn">←</a>
                 <h2 className="portal-form-title">Room TV Access</h2>
               </div>
-              <div className="portal-form-body">
+              <form onSubmit={handleGuestGo} className="portal-form-body" action="/" method="get">
                 <div className="portal-field">
                   <label className="portal-label">Hotel ID</label>
-                  <input type="text" value={hotelSlug} onChange={(e) => setHotelSlug(e.target.value)}
+                  <input type="text" name="hotel" value={hotelSlug} onChange={(e) => setHotelSlug(e.target.value)}
                     placeholder="e.g. amartha-hotel" className="portal-input" />
                 </div>
                 <div className="portal-field">
                   <label className="portal-label">Room Code</label>
-                  <input type="text" value={roomCode} onChange={(e) => setRoomCode(e.target.value)}
-                    placeholder="e.g. 417" className="portal-input"
-                    onKeyDown={e => { if (e.key === 'Enter') handleGuestGo(); }} />
+                  <input type="text" name="room" value={roomCode} onChange={(e) => setRoomCode(e.target.value)}
+                    placeholder="e.g. 417" className="portal-input" />
                 </div>
                 {error && <p className="portal-error">{error}</p>}
-                <button onClick={handleGuestGo} className="portal-submit-btn" style={{ background: '#14b8a6' }}>
+                <button type="submit" className="portal-submit-btn" style={{ background: '#14b8a6' }}>
                   Open Dashboard
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         )}
@@ -211,21 +239,20 @@ export default function PortalPage() {
           <div className="portal-form-wrap">
             <div className="portal-form-card">
               <div className="portal-form-header">
-                <button onClick={() => { setMode('choose'); setError(''); }} className="portal-back-btn">←</button>
+                <a href="/" className="portal-back-btn">←</a>
                 <h2 className="portal-form-title">Staff Login</h2>
               </div>
-              <div className="portal-form-body">
+              <form onSubmit={handleStaffGo} className="portal-form-body" action="/" method="get">
                 <div className="portal-field">
                   <label className="portal-label">Hotel ID</label>
-                  <input type="text" value={hotelSlug} onChange={(e) => setHotelSlug(e.target.value)}
-                    placeholder="e.g. amartha-hotel" className="portal-input"
-                    onKeyDown={e => { if (e.key === 'Enter') handleStaffGo(); }} />
+                  <input type="text" name="hotel" value={hotelSlug} onChange={(e) => setHotelSlug(e.target.value)}
+                    placeholder="e.g. amartha-hotel" className="portal-input" />
                 </div>
                 {error && <p className="portal-error">{error}</p>}
-                <button onClick={handleStaffGo} className="portal-submit-btn" style={{ background: '#6366f1' }}>
+                <button type="submit" className="portal-submit-btn" style={{ background: '#6366f1' }}>
                   Continue to Login
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         )}
@@ -308,7 +335,8 @@ export default function PortalPage() {
           cursor: pointer;
           transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
           display: block;
-          outline: none; /* Removed default outline to use custom */
+          text-decoration: none;
+          outline: none;
         }
         .portal-card:hover, .portal-card:focus { 
           transform: scale(1.02); 
@@ -316,7 +344,7 @@ export default function PortalPage() {
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
         .portal-card:focus {
-           border-color: #14b8a6; /* Teal highlight when focused via remote */
+           border-color: #14b8a6;
         }
         .portal-card-icon {
           width: 48px; height: 48px; border-radius: 12px;
@@ -343,7 +371,7 @@ export default function PortalPage() {
         }
         .portal-back-btn {
           background: none; border: none; color: #94a3b8; font-size: 18px;
-          cursor: pointer; padding: 4px 8px;
+          cursor: pointer; padding: 4px 8px; text-decoration: none;
         }
         .portal-back-btn:hover { color: white; }
         .portal-form-title {
@@ -403,5 +431,17 @@ export default function PortalPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function PortalPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', fontFamily: 'system-ui' }}>
+        Loading...
+      </div>
+    }>
+      <PortalContent />
+    </Suspense>
   );
 }
