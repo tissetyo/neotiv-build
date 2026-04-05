@@ -49,10 +49,7 @@ export default function SetupSTBPage() {
     const tick = () => {
       const remaining = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
       setTimeLeft(remaining);
-      if (remaining <= 0) {
-        // Auto-regenerate
-        generateCode();
-      }
+      if (remaining <= 0) generateCode();
     };
     tick();
     const interval = setInterval(tick, 1000);
@@ -67,13 +64,11 @@ export default function SetupSTBPage() {
         const res = await fetch(`/api/stb/poll?code=${pairingCode}`);
         const data = await res.json();
         if (data.status === 'paired') {
-          // Save session data to localStorage
           if (data.sessionData && data.hotelSlug && data.roomCode) {
             localStorage.setItem(
               `neotiv_room_${data.hotelSlug}_${data.roomCode}`,
               JSON.stringify(data.sessionData)
             );
-            // Also save STB config
             localStorage.setItem('neotiv_stb_setup', JSON.stringify({
               hotelSlug: data.hotelSlug,
               roomCode: data.roomCode,
@@ -89,7 +84,6 @@ export default function SetupSTBPage() {
       } catch { /* retry next tick */ }
     };
     const interval = setInterval(poll, 3000);
-    // Initial poll
     poll();
     return () => clearInterval(interval);
   }, [step, pairingCode, generateCode]);
@@ -117,77 +111,29 @@ export default function SetupSTBPage() {
   // ═══════════════════════════════════════════
   if (step === 'paired') {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        color: 'white',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem',
-      }}>
+      <div className="stb-page">
         <div style={{ maxWidth: 600, width: '100%', textAlign: 'center' }}>
-          {/* Success animation */}
-          <div style={{
-            width: 120, height: 120, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #14b8a6, #10b981)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 56, marginBottom: 32,
-            boxShadow: '0 0 60px rgba(20, 184, 166, 0.4)',
-            animation: 'pulse-glow 2s ease-in-out infinite',
-          }}>✓</div>
-
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: '0 0 12px' }}>
-            Device Paired!
-          </h1>
+          <div className="stb-success-icon">✓</div>
+          <h1 className="stb-heading-xl">Device Paired!</h1>
           <p style={{ color: '#94a3b8', fontSize: '1.2rem', margin: '0 0 8px' }}>
             Connected to <span style={{ color: '#5eead4', fontWeight: 600 }}>{pairedHotel}</span>
           </p>
           <p style={{ fontSize: '3rem', fontWeight: 700, color: '#14b8a6', margin: '16px 0 40px' }}>
             Room {pairedRoom}
           </p>
-
-          {/* Redirect progress */}
-          <div style={{
-            background: 'rgba(255,255,255,0.06)', borderRadius: 16,
-            padding: '24px 32px',
-          }}>
+          <div className="stb-card" style={{ padding: '24px 32px' }}>
             <p style={{ color: '#e2e8f0', fontSize: '1.1rem', margin: '0 0 16px' }}>
               Launching dashboard in {redirectCountdown}s...
             </p>
-            <div style={{
-              width: '100%', height: 6, borderRadius: 3,
-              background: 'rgba(255,255,255,0.1)', overflow: 'hidden',
-            }}>
-              <div style={{
-                height: '100%', borderRadius: 3,
-                background: 'linear-gradient(90deg, #14b8a6, #10b981)',
-                width: `${((5 - redirectCountdown) / 5) * 100}%`,
-                transition: 'width 1s linear',
-              }} />
+            <div className="stb-progress-track">
+              <div className="stb-progress-bar" style={{ width: `${((5 - redirectCountdown) / 5) * 100}%` }} />
             </div>
           </div>
-
-          <button
-            onClick={() => redirectUrl && router.push(redirectUrl)}
-            style={{
-              marginTop: 24, background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)', color: '#e2e8f0',
-              padding: '12px 28px', borderRadius: 12, fontSize: '1rem',
-              cursor: 'pointer',
-            }}
-          >
+          <button onClick={() => redirectUrl && router.push(redirectUrl)} className="stb-btn-ghost" style={{ marginTop: 24 }}>
             Go Now →
           </button>
         </div>
-
-        <style>{`
-          @keyframes pulse-glow {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 60px rgba(20, 184, 166, 0.4); }
-            50% { transform: scale(1.05); box-shadow: 0 0 80px rgba(20, 184, 166, 0.6); }
-          }
-        `}</style>
+        <style>{stbStyles}</style>
       </div>
     );
   }
@@ -199,182 +145,77 @@ export default function SetupSTBPage() {
     const qrValue = `${origin}/stb-pair?code=${pairingCode}`;
 
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        color: 'white',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem',
-      }}>
-        <div style={{ maxWidth: 900, width: '100%' }}>
+      <div className="stb-page">
+        <div style={{ maxWidth: 960, width: '100%' }}>
           {/* Step indicator */}
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'rgba(20, 184, 166, 0.12)', padding: '8px 20px',
-              borderRadius: 50, border: '1px solid rgba(20, 184, 166, 0.25)',
-              marginBottom: 16,
-            }}>
-              <span style={{ color: '#5eead4', fontSize: 14, fontWeight: 600 }}>STEP 2 OF 2</span>
-            </div>
-            <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: '0 0 8px' }}>
-              Scan QR Code from Staff Phone
-            </h1>
-            <p style={{ color: '#94a3b8', fontSize: '1.05rem', margin: 0, maxWidth: 500, marginInline: 'auto' }}>
-              Open the Neotiv app on your phone, go to <strong style={{ color: '#e2e8f0' }}>Rooms</strong>, select a room, and tap <strong style={{ color: '#5eead4' }}>Pair STB</strong>
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <div className="stb-badge stb-badge-teal">STEP 2 OF 2</div>
+            <h1 className="stb-heading-lg">Scan QR Code from Staff Phone</h1>
+            <p className="stb-subtext" style={{ maxWidth: 440, margin: '0 auto' }}>
+              Open Neotiv on your phone → <strong style={{ color: '#e2e8f0' }}>Rooms</strong> → select room → <strong style={{ color: '#5eead4' }}>Pair STB</strong>
             </p>
           </div>
 
-          {/* Main QR area */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr auto 1fr',
-            gap: '2rem', alignItems: 'center',
-          }}>
-            {/* Left: Instructions */}
-            <div style={{
-              background: 'rgba(255,255,255,0.04)', borderRadius: 20,
-              padding: '2rem', border: '1px solid rgba(255,255,255,0.06)',
-            }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: '0 0 20px', color: '#e2e8f0' }}>
-                📱 On Your Phone
-              </h3>
+          {/* QR Code - centered and big */}
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <div className="stb-qr-container">
+              <QRCode value={qrValue} size={220} level="H" />
+            </div>
+
+            {/* Pairing Code */}
+            <div style={{ marginTop: 20 }}>
+              <p className="stb-label">Pairing Code</p>
+              <div className="stb-code-grid">
+                {pairingCode.split('').map((char, i) => (
+                  <div key={i} className="stb-code-char">{char}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* Timer */}
+            <div className={`stb-timer ${timeLeft < 60 ? 'stb-timer-urgent' : ''}`}>
+              ⏱ Expires in {formatTime(timeLeft)}
+            </div>
+
+            {/* Waiting indicator */}
+            <div className="stb-waiting">
+              <div className="stb-dot" />
+              Waiting for staff to scan...
+            </div>
+          </div>
+
+          {/* Instructions - responsive grid */}
+          <div className="stb-2col">
+            {/* Left: Phone steps */}
+            <div className="stb-card">
+              <h3 className="stb-card-title">📱 On Your Phone</h3>
               {[
-                { n: 1, text: 'Open browser & go to your Neotiv domain', icon: '🌐' },
-                { n: 2, text: 'Choose "Staff Portal" and login', icon: '🔑' },
-                { n: 3, text: 'Go to Rooms → select the room', icon: '🚪' },
-                { n: 4, text: 'Tap "📺 Pair STB" button', icon: '📺' },
-                { n: 5, text: 'Scan this QR code or enter the code', icon: '📷' },
-              ].map(s => (
-                <div key={s.n} style={{
-                  display: 'flex', gap: 14, alignItems: 'center',
-                  padding: '12px 0',
-                  borderBottom: s.n < 5 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: 'rgba(20, 184, 166, 0.15)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#5eead4', fontSize: 14, fontWeight: 700,
-                    flexShrink: 0,
-                  }}>{s.n}</div>
-                  <span style={{ color: '#cbd5e1', fontSize: '0.95rem', lineHeight: 1.4 }}>
-                    {s.text}
-                  </span>
+                'Open browser & go to your Neotiv domain',
+                'Choose "Staff Portal" and login',
+                'Go to Rooms → select the room',
+                'Tap "📺 Pair STB" button',
+                'Enter the code shown above',
+              ].map((text, i) => (
+                <div key={i} className="stb-step-row">
+                  <div className="stb-step-num">{i + 1}</div>
+                  <span className="stb-step-text">{text}</span>
                 </div>
               ))}
             </div>
 
-            {/* Center: QR Code */}
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                background: 'white', borderRadius: 24, padding: 28,
-                display: 'inline-block',
-                boxShadow: '0 0 80px rgba(20, 184, 166, 0.2)',
-              }}>
-                <QRCode value={qrValue} size={240} level="H" />
-              </div>
-
-              {/* Pairing Code */}
-              <div style={{ marginTop: 24 }}>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 2 }}>
-                  Pairing Code
-                </p>
-                <div style={{
-                  display: 'flex', justifyContent: 'center', gap: 8,
-                }}>
-                  {pairingCode.split('').map((char, i) => (
-                    <div key={i} style={{
-                      width: 48, height: 56, borderRadius: 12,
-                      background: 'rgba(20, 184, 166, 0.15)',
-                      border: '2px solid rgba(20, 184, 166, 0.3)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 24, fontWeight: 700, color: '#5eead4',
-                      fontFamily: 'monospace',
-                    }}>{char}</div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Timer */}
-              <div style={{
-                marginTop: 20,
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: timeLeft < 60 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.05)',
-                padding: '8px 16px', borderRadius: 8,
-                border: `1px solid ${timeLeft < 60 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255,255,255,0.08)'}`,
-              }}>
-                <span style={{ fontSize: 14, color: timeLeft < 60 ? '#fca5a5' : '#94a3b8' }}>
-                  ⏱ Expires in {formatTime(timeLeft)}
-                </span>
-              </div>
-
-              {/* Waiting indicator */}
-              <div style={{
-                marginTop: 16,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}>
-                <div style={{
-                  width: 8, height: 8, borderRadius: '50%', background: '#14b8a6',
-                  animation: 'blink 1.5s ease-in-out infinite',
-                }} />
-                <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
-                  Waiting for staff to scan...
-                </span>
-              </div>
-            </div>
-
-            {/* Right: Alternative */}
-            <div style={{
-              background: 'rgba(255,255,255,0.04)', borderRadius: 20,
-              padding: '2rem', border: '1px solid rgba(255,255,255,0.06)',
-            }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: '0 0 16px', color: '#e2e8f0' }}>
-                📋 Don't have a phone?
-              </h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 20px' }}>
-                You can also set up this STB manually by entering the hotel and room information directly.
-              </p>
-              <button
-                onClick={() => setStep('choose')}
-                style={{
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#e2e8f0', padding: '10px 20px', borderRadius: 10,
-                  fontSize: '0.9rem', cursor: 'pointer', width: '100%',
-                }}
-              >
+            {/* Right: Alternatives */}
+            <div className="stb-card">
+              <h3 className="stb-card-title">📋 Other Options</h3>
+              <button onClick={() => setStep('choose')} className="stb-btn-outline" style={{ marginBottom: 16 }}>
                 ← Manual Setup
               </button>
-
-              <div style={{
-                marginTop: 24, paddingTop: 24,
-                borderTop: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: '0 0 16px', color: '#e2e8f0' }}>
-                  📥 Need the App?
-                </h3>
-                <a href="/neotiv-stb.apk" download="neotiv-stb.apk" style={{
-                  display: 'block', background: 'linear-gradient(135deg, #14b8a6, #0d9488)',
-                  padding: '12px 20px', borderRadius: 10, color: 'white',
-                  textDecoration: 'none', textAlign: 'center',
-                  fontSize: '0.9rem', fontWeight: 600,
-                }}>
-                  ⬇️ Download Neotiv APK
-                </a>
-              </div>
+              <a href="/neotiv-stb.apk" download="neotiv-stb.apk" className="stb-btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                ⬇️ Download Neotiv APK
+              </a>
             </div>
           </div>
         </div>
-
-        <style>{`
-          @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-          }
-        `}</style>
+        <style>{stbStyles}</style>
       </div>
     );
   }
@@ -383,134 +224,69 @@ export default function SetupSTBPage() {
   // STEP 1: CHOOSE — Start or Manual Setup
   // ═══════════════════════════════════════════
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-      color: 'white',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem',
-    }}>
-      <div style={{ maxWidth: 700, width: '100%' }}>
+    <div className="stb-page">
+      <div style={{ maxWidth: 640, width: '100%' }}>
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: 18,
-            background: 'linear-gradient(135deg, #14b8a6, #0d9488)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 32, fontWeight: 700, marginBottom: 20,
-            boxShadow: '0 8px 32px rgba(20, 184, 166, 0.3)',
-          }}>N</div>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: '0 0 8px' }}>
-            Neotiv STB Setup
-          </h1>
-          <p style={{ color: '#94a3b8', fontSize: '1.05rem', margin: 0 }}>
-            Configure this set-top box for a hotel room
-          </p>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div className="stb-logo">N</div>
+          <h1 className="stb-heading-xl">Neotiv STB Setup</h1>
+          <p className="stb-subtext">Configure this set-top box for a hotel room</p>
         </div>
 
         {/* Step indicator */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'rgba(99, 102, 241, 0.12)', padding: '8px 20px',
-            borderRadius: 50, border: '1px solid rgba(99, 102, 241, 0.25)',
-          }}>
-            <span style={{ color: '#a5b4fc', fontSize: 14, fontWeight: 600 }}>STEP 1 OF 2</span>
-          </div>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div className="stb-badge stb-badge-indigo">STEP 1 OF 2</div>
         </div>
 
         {error && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: 12, padding: '12px 20px', marginBottom: 24,
-            color: '#fca5a5', textAlign: 'center', fontSize: '0.95rem',
-          }}>
-            {error}
-          </div>
+          <div className="stb-error">{error}</div>
         )}
 
         {/* Primary: QR Pairing */}
-        <button
-          onClick={generateCode}
-          disabled={loading}
-          style={{
-            width: '100%',
-            background: 'linear-gradient(135deg, #14b8a6, #0d9488)',
-            border: 'none', borderRadius: 20, padding: '2rem 2.5rem',
-            color: 'white', cursor: loading ? 'wait' : 'pointer',
-            textAlign: 'center', marginBottom: '1rem',
-            boxShadow: '0 8px 32px rgba(20, 184, 166, 0.3)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            opacity: loading ? 0.8 : 1,
-          }}
-        >
-          <div style={{ fontSize: '3rem', marginBottom: 12 }}>📺</div>
-          <h3 style={{ margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 700 }}>
+        <button onClick={generateCode} disabled={loading} className="stb-primary-action">
+          <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📺</div>
+          <h3 className="stb-action-title">
             {loading ? 'Generating Code...' : 'Start QR Pairing'}
           </h3>
-          <p style={{ margin: 0, opacity: 0.9, fontSize: '1rem', lineHeight: 1.6 }}>
-            Show a QR code on this TV — staff scans it with their phone to instantly configure this device. <strong>No typing needed!</strong>
+          <p className="stb-action-desc">
+            Show a QR code on this TV — staff scans it with their phone. <strong>No typing needed!</strong>
           </p>
-          <div style={{
-            marginTop: 16, padding: '10px 24px',
-            background: 'rgba(255,255,255,0.2)', borderRadius: 10,
-            display: 'inline-block', fontSize: '1rem', fontWeight: 600,
-          }}>
+          <div className="stb-action-cta">
             {loading ? '⏳ Please wait...' : '▶ Generate QR Code'}
           </div>
         </button>
 
         {/* Secondary options */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
-          {/* Download APK */}
-          <a href="/neotiv-stb.apk" download="neotiv-stb.apk" style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16,
-            padding: '1.5rem', color: 'white', textDecoration: 'none',
-            display: 'block', textAlign: 'center',
-            transition: 'transform 0.2s',
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: 8 }}>📥</div>
-            <h4 style={{ margin: '0 0 6px', fontSize: '1rem', fontWeight: 600 }}>Download APK</h4>
-            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.4 }}>
-              Install the Neotiv TV launcher app
-            </p>
+        <div className="stb-2col" style={{ marginTop: 12 }}>
+          <a href="/neotiv-stb.apk" download="neotiv-stb.apk" className="stb-option-card">
+            <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>📥</div>
+            <h4 className="stb-option-title">Download APK</h4>
+            <p className="stb-option-desc">Install the Neotiv TV launcher app</p>
           </a>
-
-          {/* Manual setup fallback */}
           <ManualSetupCard />
         </div>
 
         {/* How it works */}
-        <div style={{
-          marginTop: '2rem', background: 'rgba(255,255,255,0.03)',
-          borderRadius: 16, padding: '1.5rem 2rem',
-          border: '1px solid rgba(255,255,255,0.06)',
-        }}>
+        <div className="stb-card" style={{ marginTop: 24 }}>
           <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#94a3b8', fontWeight: 600 }}>
             How QR Pairing Works
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          <div className="stb-3col">
             {[
-              { icon: '📺', title: 'This TV shows a QR code', desc: 'Click "Start QR Pairing" above' },
-              { icon: '📱', title: 'Staff scans with phone', desc: 'Select room & scan the code' },
-              { icon: '✅', title: 'TV auto-configures', desc: 'Dashboard launches automatically' },
+              { icon: '📺', title: 'TV shows QR code', desc: 'Click "Start QR Pairing"' },
+              { icon: '📱', title: 'Staff scans', desc: 'Select room & scan code' },
+              { icon: '✅', title: 'Auto-configures', desc: 'Dashboard launches!' },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', marginBottom: 8 }}>{s.icon}</div>
-                <p style={{ color: '#e2e8f0', fontSize: '0.9rem', fontWeight: 600, margin: '0 0 4px' }}>{s.title}</p>
-                <p style={{ color: '#64748b', fontSize: '0.8rem', margin: 0, lineHeight: 1.4 }}>{s.desc}</p>
-                {i < 2 && (
-                  <div style={{ color: '#475569', fontSize: '1.5rem', marginTop: 8 }}>→</div>
-                )}
+                <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>{s.icon}</div>
+                <p style={{ color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 2px' }}>{s.title}</p>
+                <p style={{ color: '#64748b', fontSize: '0.75rem', margin: 0, lineHeight: 1.4 }}>{s.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
+      <style>{stbStyles}</style>
     </div>
   );
 }
@@ -523,10 +299,8 @@ function ManualSetupCard() {
   const [expanded, setExpanded] = useState(false);
   const [hotelSlug, setHotelSlug] = useState('');
   const [roomCode, setRoomCode] = useState('');
-  const [origin, setOrigin] = useState('');
 
   useEffect(() => {
-    setOrigin(window.location.origin);
     const saved = localStorage.getItem('neotiv_stb_setup');
     if (saved) {
       try {
@@ -539,17 +313,10 @@ function ManualSetupCard() {
 
   if (!expanded) {
     return (
-      <button onClick={() => setExpanded(true)} style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16,
-        padding: '1.5rem', color: 'white', cursor: 'pointer',
-        textAlign: 'center', transition: 'transform 0.2s',
-      }}>
-        <div style={{ fontSize: '2rem', marginBottom: 8 }}>⌨️</div>
-        <h4 style={{ margin: '0 0 6px', fontSize: '1rem', fontWeight: 600 }}>Manual Setup</h4>
-        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.4 }}>
-          Type hotel & room code manually
-        </p>
+      <button onClick={() => setExpanded(true)} className="stb-option-card">
+        <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>⌨️</div>
+        <h4 className="stb-option-title">Manual Setup</h4>
+        <p className="stb-option-desc">Type hotel & room code</p>
       </button>
     );
   }
@@ -560,53 +327,214 @@ function ManualSetupCard() {
       hotelSlug: hotelSlug.trim(), 
       roomCode: roomCode.trim() 
     }));
-    const url = `/${hotelSlug.trim()}/dashboard/${roomCode.trim()}`;
-    router.push(url);
+    router.push(`/${hotelSlug.trim()}/dashboard/${roomCode.trim()}`);
   };
 
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.05)',
-      border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16,
-      padding: '1.5rem', color: 'white',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>Manual Setup</h4>
-        <button onClick={() => setExpanded(false)} style={{
-          background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 18,
-        }}>✕</button>
+    <div className="stb-option-card" style={{ textAlign: 'left' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <h4 className="stb-option-title" style={{ margin: 0 }}>Manual Setup</h4>
+        <button onClick={() => setExpanded(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 16 }}>✕</button>
       </div>
-      <input
-        type="text" value={hotelSlug}
-        onChange={e => setHotelSlug(e.target.value)}
-        placeholder="Hotel slug"
-        style={{
-          width: '100%', padding: '10px 12px', fontSize: '0.85rem',
-          background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: 8, color: 'white', outline: 'none', marginBottom: 8,
-          boxSizing: 'border-box',
-        }}
-      />
-      <input
-        type="text" value={roomCode}
-        onChange={e => setRoomCode(e.target.value)}
-        placeholder="Room code"
-        onKeyDown={e => { if (e.key === 'Enter') handleGo(); }}
-        style={{
-          width: '100%', padding: '10px 12px', fontSize: '0.85rem',
-          background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: 8, color: 'white', outline: 'none', marginBottom: 10,
-          boxSizing: 'border-box',
-        }}
-      />
-      <button onClick={handleGo} disabled={!hotelSlug.trim() || !roomCode.trim()} style={{
-        width: '100%', padding: '10px', fontSize: '0.85rem', fontWeight: 600,
-        background: (hotelSlug.trim() && roomCode.trim()) ? '#14b8a6' : 'rgba(255,255,255,0.08)',
-        color: (hotelSlug.trim() && roomCode.trim()) ? 'white' : '#64748b',
-        border: 'none', borderRadius: 8, cursor: 'pointer',
-      }}>
+      <input type="text" value={hotelSlug} onChange={e => setHotelSlug(e.target.value)}
+        placeholder="Hotel slug" className="stb-input" style={{ marginBottom: 8 }} />
+      <input type="text" value={roomCode} onChange={e => setRoomCode(e.target.value)}
+        placeholder="Room code" className="stb-input" style={{ marginBottom: 10 }}
+        onKeyDown={e => { if (e.key === 'Enter') handleGo(); }} />
+      <button onClick={handleGo} disabled={!hotelSlug.trim() || !roomCode.trim()} className="stb-btn-primary" style={{ width: '100%' }}>
         Launch →
       </button>
     </div>
   );
 }
+
+// ═══════════════════════════════════════════
+// STYLES — pure CSS, STB-compatible, responsive
+// ═══════════════════════════════════════════
+const stbStyles = `
+  * { box-sizing: border-box; }
+  
+  .stb-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white;
+    font-family: system-ui, -apple-system, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .stb-logo {
+    width: 64px; height: 64px; border-radius: 16px;
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 700; margin-bottom: 16px;
+  }
+
+  .stb-heading-xl { font-size: 1.8rem; font-weight: 800; margin: 0 0 8px; }
+  .stb-heading-lg { font-size: 1.5rem; font-weight: 700; margin: 0 0 8px; }
+  .stb-subtext { color: #94a3b8; font-size: 0.95rem; margin: 0; line-height: 1.5; }
+
+  .stb-badge {
+    display: inline-block; padding: 6px 16px; border-radius: 50px;
+    font-size: 12px; font-weight: 600; margin-bottom: 12px;
+  }
+  .stb-badge-teal { background: rgba(20,184,166,0.12); border: 1px solid rgba(20,184,166,0.25); color: #5eead4; }
+  .stb-badge-indigo { background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.25); color: #a5b4fc; }
+
+  .stb-card {
+    background: rgba(255,255,255,0.04); border-radius: 16px;
+    padding: 20px; border: 1px solid rgba(255,255,255,0.06);
+  }
+  .stb-card-title { font-size: 1rem; font-weight: 600; margin: 0 0 16px; color: #e2e8f0; }
+
+  .stb-error {
+    background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 12px; padding: 12px 20px; margin-bottom: 20px;
+    color: #fca5a5; text-align: center; font-size: 0.9rem;
+  }
+
+  .stb-primary-action {
+    width: 100%; background: linear-gradient(135deg, #14b8a6, #0d9488);
+    border: none; border-radius: 16px; padding: 24px 20px;
+    color: white; cursor: pointer; text-align: center; margin-bottom: 8px;
+  }
+  .stb-action-title { margin: 0 0 6px; font-size: 1.3rem; font-weight: 700; }
+  .stb-action-desc { margin: 0; opacity: 0.9; font-size: 0.9rem; line-height: 1.5; }
+  .stb-action-cta {
+    margin-top: 12px; padding: 8px 20px; background: rgba(255,255,255,0.2);
+    border-radius: 8px; display: inline-block; font-size: 0.9rem; font-weight: 600;
+  }
+
+  .stb-option-card {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 16px; color: white; text-align: center;
+    cursor: pointer; text-decoration: none; display: block;
+  }
+  .stb-option-title { margin: 0 0 4px; font-size: 0.9rem; font-weight: 600; }
+  .stb-option-desc { margin: 0; color: #94a3b8; font-size: 0.75rem; line-height: 1.4; }
+
+  .stb-qr-container {
+    background: white; border-radius: 20px; padding: 20px;
+    display: inline-block;
+  }
+
+  .stb-label {
+    color: #64748b; font-size: 0.75rem; margin: 0 0 8px;
+    text-transform: uppercase; letter-spacing: 2px;
+  }
+  .stb-code-grid { display: flex; justify-content: center; gap: 6px; }
+  .stb-code-char {
+    width: 40px; height: 48px; border-radius: 10px;
+    background: rgba(20,184,166,0.15); border: 2px solid rgba(20,184,166,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; color: #5eead4; font-family: monospace;
+  }
+
+  .stb-timer {
+    margin-top: 16px; display: inline-block; padding: 6px 14px;
+    border-radius: 8px; font-size: 13px; color: #94a3b8;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  }
+  .stb-timer-urgent { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+
+  .stb-waiting {
+    margin-top: 12px; display: flex; align-items: center; justify-content: center;
+    gap: 8px; color: #94a3b8; font-size: 0.85rem;
+  }
+  .stb-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #14b8a6;
+    animation: stb-blink 1.5s ease-in-out infinite;
+  }
+
+  .stb-step-row {
+    display: flex; gap: 12px; align-items: center; padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .stb-step-row:last-child { border-bottom: none; }
+  .stb-step-num {
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    background: rgba(20,184,166,0.15); display: flex; align-items: center; justify-content: center;
+    color: #5eead4; font-size: 13px; font-weight: 700;
+  }
+  .stb-step-text { color: #cbd5e1; font-size: 0.85rem; line-height: 1.4; }
+
+  .stb-btn-outline {
+    width: 100%; padding: 10px; background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15); color: #e2e8f0;
+    border-radius: 10px; font-size: 0.85rem; cursor: pointer;
+  }
+  .stb-btn-primary {
+    width: auto; padding: 10px 20px; background: linear-gradient(135deg, #14b8a6, #0d9488);
+    border: none; color: white; border-radius: 10px; font-size: 0.85rem;
+    font-weight: 600; cursor: pointer;
+  }
+  .stb-btn-ghost {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: #e2e8f0; padding: 10px 24px; border-radius: 10px; font-size: 0.9rem; cursor: pointer;
+  }
+
+  .stb-input {
+    width: 100%; padding: 10px 12px; font-size: 0.85rem;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px; color: white; outline: none;
+  }
+
+  .stb-progress-track {
+    width: 100%; height: 6px; border-radius: 3px;
+    background: rgba(255,255,255,0.1); overflow: hidden;
+  }
+  .stb-progress-bar {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, #14b8a6, #10b981);
+    transition: width 1s linear;
+  }
+
+  .stb-success-icon {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: linear-gradient(135deg, #14b8a6, #10b981);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 48px; margin-bottom: 24px;
+  }
+
+  /* Responsive grids */
+  .stb-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stb-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* Phone responsive */
+  @media (max-width: 640px) {
+    .stb-page { padding: 12px; }
+    .stb-heading-xl { font-size: 1.4rem; }
+    .stb-heading-lg { font-size: 1.2rem; }
+    .stb-2col { grid-template-columns: 1fr; }
+    .stb-3col { grid-template-columns: 1fr; }
+    .stb-primary-action { padding: 20px 16px; }
+    .stb-action-title { font-size: 1.1rem; }
+    .stb-code-char { width: 36px; height: 42px; font-size: 18px; }
+    .stb-qr-container { padding: 16px; }
+    .stb-qr-container svg { width: 180px !important; height: 180px !important; }
+  }
+
+  /* Tablet */
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .stb-qr-container svg { width: 200px !important; height: 200px !important; }
+  }
+
+  /* TV large screens */
+  @media (min-width: 1280px) {
+    .stb-heading-xl { font-size: 2.2rem; }
+    .stb-heading-lg { font-size: 1.8rem; }
+    .stb-code-char { width: 48px; height: 56px; font-size: 24px; }
+    .stb-qr-container { padding: 28px; }
+    .stb-qr-container svg { width: 260px !important; height: 260px !important; }
+    .stb-primary-action { padding: 32px; }
+    .stb-action-title { font-size: 1.5rem; }
+    .stb-step-text { font-size: 0.95rem; }
+  }
+
+  @keyframes stb-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+`;

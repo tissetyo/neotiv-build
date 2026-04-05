@@ -40,8 +40,8 @@ export default function StaffLoginPage({ params }: { params: Promise<{ hotelSlug
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-sidebar-bg)', fontFamily: 'var(--font-staff)' }}>
-      <div className="w-full max-w-md p-8 rounded-2xl" style={{ background: '#1e293b', border: '1px solid #334155' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--color-sidebar-bg, #0f172a)', fontFamily: 'var(--font-staff, system-ui)' }}>
+      <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl" style={{ background: '#1e293b', border: '1px solid #334155' }}>
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-white">Neotiv</h1>
           <p className="text-slate-400 mt-2">Staff Login</p>

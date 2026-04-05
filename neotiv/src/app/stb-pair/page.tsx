@@ -10,30 +10,24 @@ function StbPairContent() {
   const [code, setCode] = useState(codeFromUrl);
   const [hotelSlug, setHotelSlug] = useState('');
   const [roomCode, setRoomCode] = useState('');
-  const [step, setStep] = useState<'auth' | 'pair' | 'success'>('auth');
+  const [step, setStep] = useState<'pair' | 'success'>('pair');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [pairedRoom, setPairedRoom] = useState('');
   const [pairedHotel, setPairedHotel] = useState('');
 
-  // Check if user is already logged in (has hotel context)
   useEffect(() => {
-    // Check localStorage for any recent staff session slug
-    const stbSetup = localStorage.getItem('neotiv_staff_context');
-    if (stbSetup) {
+    const ctx = localStorage.getItem('neotiv_staff_context');
+    if (ctx) {
       try {
-        const data = JSON.parse(stbSetup);
+        const data = JSON.parse(ctx);
         if (data.hotelSlug) setHotelSlug(data.hotelSlug);
       } catch {}
     }
   }, []);
 
-  // Pre-fill code from URL
   useEffect(() => {
-    if (codeFromUrl) {
-      setCode(codeFromUrl.toUpperCase());
-      setStep('pair');
-    }
+    if (codeFromUrl) setCode(codeFromUrl.toUpperCase());
   }, [codeFromUrl]);
 
   const handlePair = async () => {
@@ -55,7 +49,6 @@ function StbPairContent() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-
       setPairedRoom(data.roomCode);
       setPairedHotel(data.hotelName);
       setStep('success');
@@ -65,158 +58,82 @@ function StbPairContent() {
     setLoading(false);
   };
 
-  // ═══════════════════════════════════════
-  // SUCCESS
-  // ═══════════════════════════════════════
   if (step === 'success') {
     return (
-      <div style={{
-        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'linear-gradient(135deg, #0f172a, #1e293b)', padding: 24,
-        fontFamily: 'system-ui, sans-serif',
-      }}>
-        <div style={{ maxWidth: 400, width: '100%', textAlign: 'center', color: 'white' }}>
-          <div style={{
-            width: 80, height: 80, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #14b8a6, #10b981)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 36, marginBottom: 24,
-          }}>✓</div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '0 0 8px' }}>STB Paired!</h1>
-          <p style={{ color: '#94a3b8', fontSize: '1rem', margin: '0 0 16px' }}>
+      <div className="pair-page">
+        <div className="pair-container" style={{ textAlign: 'center' }}>
+          <div className="pair-success-icon">✓</div>
+          <h1 className="pair-heading">STB Paired!</h1>
+          <p style={{ color: '#94a3b8', fontSize: '1rem', margin: '0 0 12px' }}>
             <span style={{ color: '#5eead4', fontWeight: 600 }}>{pairedHotel}</span> — Room {pairedRoom}
           </p>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: 1.6 }}>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: 1.6 }}>
             The TV will automatically load the dashboard. You can close this page.
           </p>
-          <div style={{
-            marginTop: 24, padding: 16, background: 'rgba(20, 184, 166, 0.1)',
-            borderRadius: 12, border: '1px solid rgba(20, 184, 166, 0.2)',
-          }}>
-            <p style={{ color: '#5eead4', fontSize: '0.85rem', margin: 0 }}>
-              📺 Check the TV — it should redirect in a few seconds
-            </p>
+          <div className="pair-info-box">
+            📺 Check the TV — it should redirect in a few seconds
           </div>
         </div>
+        <style>{pairStyles}</style>
       </div>
     );
   }
 
-  // ═══════════════════════════════════════
-  // PAIR FORM
-  // ═══════════════════════════════════════
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0f172a, #1e293b)', padding: 24,
-      fontFamily: 'system-ui, sans-serif',
-    }}>
-      <div style={{
-        maxWidth: 420, width: '100%', color: 'white',
-        background: 'rgba(255,255,255,0.04)', borderRadius: 24,
-        padding: '2rem', border: '1px solid rgba(255,255,255,0.08)',
-      }}>
+    <div className="pair-page">
+      <div className="pair-container">
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: 14,
-            background: 'linear-gradient(135deg, #14b8a6, #0d9488)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 24, fontWeight: 700, marginBottom: 16,
-          }}>N</div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 4px' }}>Pair STB Device</h1>
-          <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div className="pair-logo">N</div>
+          <h1 className="pair-heading">Pair STB Device</h1>
+          <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>
             Enter the code shown on the TV
           </p>
         </div>
 
-        {/* Pairing Code (pre-filled from QR) */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>
-            Pairing Code
-          </label>
-          <input
-            type="text" value={code}
+        {/* Pairing Code */}
+        <div className="pair-field">
+          <label className="pair-label">Pairing Code</label>
+          <input type="text" value={code}
             onChange={e => setCode(e.target.value.toUpperCase())}
-            placeholder="ABC123"
-            maxLength={6}
-            style={{
-              width: '100%', padding: '14px 16px', fontSize: '1.5rem',
-              fontFamily: 'monospace', letterSpacing: 8, textAlign: 'center',
-              fontWeight: 700,
-              background: 'rgba(20, 184, 166, 0.1)', border: '2px solid rgba(20, 184, 166, 0.3)',
-              borderRadius: 14, color: '#5eead4', outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
+            placeholder="ABC123" maxLength={6}
+            className="pair-code-input" />
           {codeFromUrl && (
-            <p style={{ color: '#5eead4', fontSize: '0.75rem', marginTop: 6, textAlign: 'center' }}>
+            <p style={{ color: '#5eead4', fontSize: '0.7rem', marginTop: 4, textAlign: 'center' }}>
               ✓ Code auto-filled from QR scan
             </p>
           )}
         </div>
 
         {/* Hotel + Room */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>
-            Hotel ID
-          </label>
-          <input
-            type="text" value={hotelSlug}
+        <div className="pair-field">
+          <label className="pair-label">Hotel ID</label>
+          <input type="text" value={hotelSlug}
             onChange={e => setHotelSlug(e.target.value)}
-            placeholder="e.g. amartha-hotel"
-            style={{
-              width: '100%', padding: '12px 14px', fontSize: '1rem',
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 10, color: 'white', outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
+            placeholder="e.g. amartha-hotel" className="pair-input" />
         </div>
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>
-            Room Code
-          </label>
-          <input
-            type="text" value={roomCode}
+        <div className="pair-field">
+          <label className="pair-label">Room Code</label>
+          <input type="text" value={roomCode}
             onChange={e => setRoomCode(e.target.value)}
-            placeholder="e.g. 101"
-            style={{
-              width: '100%', padding: '12px 14px', fontSize: '1rem',
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 10, color: 'white', outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
+            placeholder="e.g. 101" className="pair-input"
+            onKeyDown={e => { if (e.key === 'Enter') handlePair(); }} />
         </div>
 
-        {error && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: 10, padding: '10px 14px', marginBottom: 16,
-            color: '#fca5a5', fontSize: '0.85rem', textAlign: 'center',
-          }}>{error}</div>
-        )}
+        {error && <div className="pair-error">{error}</div>}
 
-        <button
-          onClick={handlePair}
+        <button onClick={handlePair}
           disabled={loading || !code.trim() || !hotelSlug.trim() || !roomCode.trim()}
-          style={{
-            width: '100%', padding: '14px', fontSize: '1rem', fontWeight: 600,
-            background: (code.trim() && hotelSlug.trim() && roomCode.trim())
-              ? 'linear-gradient(135deg, #14b8a6, #0d9488)' : 'rgba(255,255,255,0.08)',
-            color: (code.trim() && hotelSlug.trim() && roomCode.trim()) ? 'white' : '#64748b',
-            border: 'none', borderRadius: 12, cursor: 'pointer',
-            opacity: loading ? 0.7 : 1,
-          }}
+          className={`pair-submit ${(code.trim() && hotelSlug.trim() && roomCode.trim()) ? 'pair-submit-active' : ''}`}
         >
           {loading ? '⏳ Pairing...' : '📺 Pair Device'}
         </button>
 
-        <p style={{ textAlign: 'center', marginTop: 16, color: '#475569', fontSize: '0.75rem' }}>
-          This connects the TV to the specified room's dashboard
+        <p style={{ textAlign: 'center', marginTop: 12, color: '#475569', fontSize: '0.7rem' }}>
+          This connects the TV to the specified room&apos;s dashboard
         </p>
       </div>
+      <style>{pairStyles}</style>
     </div>
   );
 }
@@ -236,3 +153,87 @@ export default function StbPairPage() {
     </Suspense>
   );
 }
+
+const pairStyles = `
+  * { box-sizing: border-box; }
+  
+  .pair-page {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    font-family: system-ui, -apple-system, sans-serif;
+    padding: 16px;
+  }
+
+  .pair-container {
+    max-width: 400px; width: 100%; color: white;
+    background: rgba(255,255,255,0.04); border-radius: 20px;
+    padding: 24px; border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .pair-logo {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; margin-bottom: 12px;
+  }
+
+  .pair-heading { font-size: 1.4rem; font-weight: 700; margin: 0 0 4px; color: white; }
+
+  .pair-field { margin-bottom: 14px; }
+  .pair-label {
+    display: block; color: #94a3b8; font-size: 0.75rem;
+    font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  .pair-code-input {
+    width: 100%; padding: 14px 16px; font-size: 1.4rem;
+    font-family: monospace; letter-spacing: 6px; text-align: center; font-weight: 700;
+    background: rgba(20,184,166,0.1); border: 2px solid rgba(20,184,166,0.3);
+    border-radius: 12px; color: #5eead4; outline: none;
+  }
+  .pair-code-input:focus { border-color: #14b8a6; }
+
+  .pair-input {
+    width: 100%; padding: 12px 14px; font-size: 1rem;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; color: white; outline: none;
+  }
+  .pair-input:focus { border-color: #14b8a6; }
+  .pair-input::placeholder { color: #475569; }
+
+  .pair-error {
+    background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;
+    color: #fca5a5; font-size: 0.8rem; text-align: center;
+  }
+
+  .pair-submit {
+    width: 100%; padding: 14px; font-size: 1rem; font-weight: 600;
+    background: rgba(255,255,255,0.08); color: #64748b;
+    border: none; border-radius: 10px; cursor: pointer;
+  }
+  .pair-submit-active {
+    background: linear-gradient(135deg, #14b8a6, #0d9488); color: white;
+  }
+  .pair-submit:disabled { opacity: 0.7; }
+
+  .pair-success-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, #14b8a6, #10b981);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 32px; margin-bottom: 16px; color: white;
+  }
+
+  .pair-info-box {
+    margin-top: 20px; padding: 14px; background: rgba(20,184,166,0.1);
+    border-radius: 10px; border: 1px solid rgba(20,184,166,0.2);
+    color: #5eead4; font-size: 0.8rem;
+  }
+
+  /* Phone */
+  @media (max-width: 480px) {
+    .pair-container { padding: 20px 16px; }
+    .pair-heading { font-size: 1.2rem; }
+    .pair-code-input { font-size: 1.2rem; padding: 12px; letter-spacing: 4px; }
+  }
+`;
