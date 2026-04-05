@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
-import { Settings, Calendar, User, KeyRound, MessageSquare, X, Save } from 'lucide-react';
+import { Settings, Calendar, User, KeyRound, MessageSquare, X, Save, Monitor } from 'lucide-react';
 import type { Room } from '@/types';
 
 export default function RoomsPage({ params }: { params: Promise<{ hotelSlug: string }> }) {
@@ -15,6 +15,13 @@ export default function RoomsPage({ params }: { params: Promise<{ hotelSlug: str
   // Quick Edit Sidebar State
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // STB Pairing State
+  const [showPairModal, setShowPairModal] = useState(false);
+  const [pairCode, setPairCode] = useState('');
+  const [pairLoading, setPairLoading] = useState(false);
+  const [pairResult, setPairResult] = useState<'success' | 'error' | null>(null);
+  const [pairError, setPairError] = useState('');
 
   useEffect(() => {
     loadRooms();
@@ -59,6 +66,36 @@ export default function RoomsPage({ params }: { params: Promise<{ hotelSlug: str
       setEditingRoom(null);
     }
     setSaving(false);
+  };
+
+  const handlePairSTB = async () => {
+    if (!pairCode.trim() || !editingRoom) return;
+    setPairLoading(true);
+    setPairResult(null);
+    setPairError('');
+    try {
+      const res = await fetch('/api/stb/pair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: pairCode.trim().toUpperCase(),
+          hotelSlug,
+          roomCode: editingRoom.room_code,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setPairResult('success');
+      setTimeout(() => {
+        setShowPairModal(false);
+        setPairCode('');
+        setPairResult(null);
+      }, 3000);
+    } catch (err: any) {
+      setPairResult('error');
+      setPairError(err.message || 'Failed to pair');
+    }
+    setPairLoading(false);
   };
 
   const toggleOccupancy = (e: React.MouseEvent, room: Room) => {
@@ -228,6 +265,20 @@ export default function RoomsPage({ params }: { params: Promise<{ hotelSlug: str
                 <p className="text-[11px] text-slate-400 mt-1.5">If set, guests must enter this PIN to unlock the TV Dashboard.</p>
               </div>
 
+              {/* Pair STB Button */}
+              <div className="pt-4 border-t border-slate-100">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <Monitor className="w-3.5 h-3.5" /> Set-Top Box
+                </label>
+                <button
+                  onClick={() => { setShowPairModal(true); setPairCode(''); setPairResult(null); setPairError(''); }}
+                  className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors border border-indigo-200"
+                >
+                  <Monitor className="w-4 h-4" /> 📺 Pair STB to This Room
+                </button>
+                <p className="text-[11px] text-slate-400 mt-1.5">Link a set-top box showing a QR pairing code to this room.</p>
+              </div>
+
            </div>
 
            <div className="p-5 border-t border-slate-100 bg-white">
@@ -239,6 +290,103 @@ export default function RoomsPage({ params }: { params: Promise<{ hotelSlug: str
                 {saving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Configuration</>}
               </button>
            </div>
+        </div>
+      )}
+
+      {/* STB Pairing Modal */}
+      {showPairModal && editingRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-[420px] overflow-hidden animate-in zoom-in-95">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-slate-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                    <Monitor className="w-5 h-5 text-indigo-600" />
+                    Pair STB — Room {editingRoom.room_code}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">Enter the 6-character code shown on the TV screen</p>
+                </div>
+                <button onClick={() => setShowPairModal(false)} className="p-2 hover:bg-slate-200 rounded-lg text-slate-400">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              {/* Step by step guide */}
+              <div className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-100">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Setup Steps</p>
+                <div className="space-y-2">
+                  {[
+                    { n: 1, text: 'On the STB, open your Neotiv domain in browser', done: true },
+                    { n: 2, text: 'Click "Set-Top Box Setup" → "Start QR Pairing"', done: true },
+                    { n: 3, text: 'Enter the 6-character code shown on screen below', done: false },
+                  ].map(s => (
+                    <div key={s.n} className="flex items-center gap-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                        s.done ? 'bg-teal-100 text-teal-600' : 'bg-indigo-100 text-indigo-600'
+                      }`}>{s.n}</div>
+                      <span className={`text-sm ${s.done ? 'text-slate-400' : 'text-slate-700 font-medium'}`}>{s.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Code Input */}
+              <div className="mb-5">
+                <input
+                  type="text"
+                  value={pairCode}
+                  onChange={e => setPairCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+                  placeholder="ABC123"
+                  maxLength={6}
+                  autoFocus
+                  className="w-full px-6 py-4 text-center text-2xl font-bold font-mono tracking-[0.5em] bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none transition-colors"
+                  onKeyDown={e => { if (e.key === 'Enter' && pairCode.length === 6) handlePairSTB(); }}
+                />
+                <p className="text-center text-xs text-slate-400 mt-2">
+                  {pairCode.length}/6 characters
+                </p>
+              </div>
+
+              {/* Result messages */}
+              {pairResult === 'success' && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm">✓</div>
+                  <div>
+                    <p className="font-bold text-emerald-800 text-sm">STB Paired Successfully!</p>
+                    <p className="text-xs text-emerald-600">The TV will now load Room {editingRoom.room_code}&apos;s dashboard</p>
+                  </div>
+                </div>
+              )}
+
+              {pairResult === 'error' && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                  <p className="font-bold text-red-800 text-sm">Pairing Failed</p>
+                  <p className="text-xs text-red-600">{pairError || 'Invalid or expired code. Check the TV screen and try again.'}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowPairModal(false)}
+                  className="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePairSTB}
+                  disabled={pairLoading || pairCode.length < 6 || pairResult === 'success'}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  {pairLoading ? '⏳ Pairing...' : pairResult === 'success' ? '✓ Done' : '📺 Pair Device'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

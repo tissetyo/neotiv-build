@@ -92,7 +92,7 @@ export default function PortalPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              className="grid grid-cols-1 md:grid-cols-3 gap-6"
             >
               {/* Guest Card */}
               <button
@@ -141,6 +141,31 @@ export default function PortalPage() {
                   Front office operations, hotel management, and guest services
                 </p>
               </button>
+
+              {/* STB Setup Card */}
+              <a
+                href="/setup-stb"
+                className="group p-8 rounded-2xl text-left transition-all duration-300 hover:scale-[1.02] block"
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(12px)',
+                  textDecoration: 'none',
+                }}
+              >
+                <div
+                  className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl mb-5 transition-all duration-300 group-hover:scale-110"
+                  style={{ background: 'rgba(245,158,11,0.15)' }}
+                >
+                  ⚙️
+                </div>
+                <h2 className="text-xl font-semibold text-white mb-2">
+                  Set-Top Box Setup
+                </h2>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Install and pair a new STB device using QR code — no typing required
+                </p>
+              </a>
             </motion.div>
           )}
 
