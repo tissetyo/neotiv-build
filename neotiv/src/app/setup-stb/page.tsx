@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import QRCode from 'react-qr-code';
 
-type Step = 'choose' | 'pairing' | 'paired';
+type Step = 'loading' | 'pairing' | 'paired';
 
 export default function SetupSTBPage() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>('choose');
+  const [step, setStep] = useState<Step>('loading');
   const [pairingCode, setPairingCode] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [timeLeft, setTimeLeft] = useState(0);
@@ -24,7 +24,9 @@ export default function SetupSTBPage() {
 
   useEffect(() => {
     setOrigin(window.location.origin);
-  }, []);
+    // Auto-generate QR code on page load
+    generateCode();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Generate pairing code
   const generateCode = useCallback(async () => {
@@ -206,9 +208,9 @@ export default function SetupSTBPage() {
             {/* Right: Alternatives */}
             <div className="stb-card">
               <h3 className="stb-card-title">📋 Other Options</h3>
-              <button onClick={() => setStep('choose')} className="stb-btn-outline" style={{ marginBottom: 16 }}>
+              <a href="/" className="stb-btn-outline" style={{ marginBottom: 16, display: 'block', textAlign: 'center', textDecoration: 'none' }}>
                 ← Manual Setup
-              </button>
+              </a>
               <a href="/neotiv-stb.apk" download="neotiv-stb.apk" className="stb-btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
                 ⬇️ Download Neotiv APK
               </a>
@@ -221,69 +223,37 @@ export default function SetupSTBPage() {
   }
 
   // ═══════════════════════════════════════════
-  // STEP 1: CHOOSE — Start or Manual Setup
+  // LOADING — Auto-generating QR code
   // ═══════════════════════════════════════════
   return (
     <div className="stb-page">
-      <div style={{ maxWidth: 640, width: '100%' }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div className="stb-logo">N</div>
-          <h1 className="stb-heading-xl">Neotiv STB Setup</h1>
-          <p className="stb-subtext">Configure this set-top box for a hotel room</p>
-        </div>
+      <div style={{ maxWidth: 500, width: '100%', textAlign: 'center' }}>
+        <div className="stb-logo">N</div>
+        <h1 className="stb-heading-xl">Neotiv STB Setup</h1>
+        <p className="stb-subtext" style={{ marginBottom: 32 }}>Preparing QR code for pairing...</p>
 
-        {/* Step indicator */}
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div className="stb-badge stb-badge-indigo">STEP 1 OF 2</div>
-        </div>
-
-        {error && (
-          <div className="stb-error">{error}</div>
+        {error ? (
+          <div>
+            <div className="stb-error">{error}</div>
+            <button onClick={generateCode} className="stb-btn-primary" style={{ marginTop: 16 }}>
+              ↻ Try Again
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div className="stb-spinner" />
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Connecting to server...</p>
+          </div>
         )}
 
-        {/* Primary: QR Pairing */}
-        <button onClick={generateCode} disabled={loading} className="stb-primary-action">
-          <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📺</div>
-          <h3 className="stb-action-title">
-            {loading ? 'Generating Code...' : 'Start QR Pairing'}
-          </h3>
-          <p className="stb-action-desc">
-            Show a QR code on this TV — staff scans it with their phone. <strong>No typing needed!</strong>
-          </p>
-          <div className="stb-action-cta">
-            {loading ? '⏳ Please wait...' : '▶ Generate QR Code'}
-          </div>
-        </button>
-
-        {/* Secondary options */}
-        <div className="stb-2col" style={{ marginTop: 12 }}>
-          <a href="/neotiv-stb.apk" download="neotiv-stb.apk" className="stb-option-card">
-            <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>📥</div>
-            <h4 className="stb-option-title">Download APK</h4>
-            <p className="stb-option-desc">Install the Neotiv TV launcher app</p>
+        {/* Quick links */}
+        <div style={{ marginTop: 40, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <a href="/neotiv-stb.apk" download="neotiv-stb.apk" className="stb-btn-ghost" style={{ textDecoration: 'none' }}>
+            📥 Download APK
           </a>
-          <ManualSetupCard />
-        </div>
-
-        {/* How it works */}
-        <div className="stb-card" style={{ marginTop: 24 }}>
-          <h3 style={{ margin: '0 0 16px', fontSize: '1rem', color: '#94a3b8', fontWeight: 600 }}>
-            How QR Pairing Works
-          </h3>
-          <div className="stb-3col">
-            {[
-              { icon: '📺', title: 'TV shows QR code', desc: 'Click "Start QR Pairing"' },
-              { icon: '📱', title: 'Staff scans', desc: 'Select room & scan code' },
-              { icon: '✅', title: 'Auto-configures', desc: 'Dashboard launches!' },
-            ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>{s.icon}</div>
-                <p style={{ color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 2px' }}>{s.title}</p>
-                <p style={{ color: '#64748b', fontSize: '0.75rem', margin: 0, lineHeight: 1.4 }}>{s.desc}</p>
-              </div>
-            ))}
-          </div>
+          <a href="/" className="stb-btn-ghost" style={{ textDecoration: 'none' }}>
+            ← Back to Portal
+          </a>
         </div>
       </div>
       <style>{stbStyles}</style>
@@ -291,62 +261,7 @@ export default function SetupSTBPage() {
   );
 }
 
-// ═══════════════════════════════════════════
-// Manual Setup Sub-component (fallback)
-// ═══════════════════════════════════════════
-function ManualSetupCard() {
-  const router = useRouter();
-  const [expanded, setExpanded] = useState(false);
-  const [hotelSlug, setHotelSlug] = useState('');
-  const [roomCode, setRoomCode] = useState('');
 
-  useEffect(() => {
-    const saved = localStorage.getItem('neotiv_stb_setup');
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        if (data.hotelSlug) setHotelSlug(data.hotelSlug);
-        if (data.roomCode) setRoomCode(data.roomCode);
-      } catch {}
-    }
-  }, []);
-
-  if (!expanded) {
-    return (
-      <button onClick={() => setExpanded(true)} className="stb-option-card">
-        <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>⌨️</div>
-        <h4 className="stb-option-title">Manual Setup</h4>
-        <p className="stb-option-desc">Type hotel & room code</p>
-      </button>
-    );
-  }
-
-  const handleGo = () => {
-    if (!hotelSlug.trim() || !roomCode.trim()) return;
-    localStorage.setItem('neotiv_stb_setup', JSON.stringify({ 
-      hotelSlug: hotelSlug.trim(), 
-      roomCode: roomCode.trim() 
-    }));
-    router.push(`/${hotelSlug.trim()}/dashboard/${roomCode.trim()}`);
-  };
-
-  return (
-    <div className="stb-option-card" style={{ textAlign: 'left' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <h4 className="stb-option-title" style={{ margin: 0 }}>Manual Setup</h4>
-        <button onClick={() => setExpanded(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 16 }}>✕</button>
-      </div>
-      <input type="text" value={hotelSlug} onChange={e => setHotelSlug(e.target.value)}
-        placeholder="Hotel slug" className="stb-input" style={{ marginBottom: 8 }} />
-      <input type="text" value={roomCode} onChange={e => setRoomCode(e.target.value)}
-        placeholder="Room code" className="stb-input" style={{ marginBottom: 10 }}
-        onKeyDown={e => { if (e.key === 'Enter') handleGo(); }} />
-      <button onClick={handleGo} disabled={!hotelSlug.trim() || !roomCode.trim()} className="stb-btn-primary" style={{ width: '100%' }}>
-        Launch →
-      </button>
-    </div>
-  );
-}
 
 // ═══════════════════════════════════════════
 // STYLES — pure CSS, STB-compatible, responsive
@@ -536,5 +451,15 @@ const stbStyles = `
   @keyframes stb-blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
+  }
+
+  .stb-spinner {
+    width: 48px; height: 48px; border: 4px solid rgba(20,184,166,0.2);
+    border-top-color: #14b8a6; border-radius: 50%;
+    animation: stb-spin 0.8s linear infinite;
+  }
+
+  @keyframes stb-spin {
+    to { transform: rotate(360deg); }
   }
 `;
