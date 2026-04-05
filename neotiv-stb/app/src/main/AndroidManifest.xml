@@ -33,10 +33,12 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <!-- Normal app launcher (shows in app drawer) -->
+                <!-- Normal app launcher (shows in app drawer on generic boxes) -->
                 <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <!-- TV launcher (shows on Android TV home) -->
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <!-- TV launcher (shows on Android TV Leanback home) -->
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>

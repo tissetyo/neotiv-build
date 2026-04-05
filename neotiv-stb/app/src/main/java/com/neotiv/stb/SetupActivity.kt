@@ -104,62 +104,67 @@ class SetupActivity : Activity() {
         }
         root.addView(statusText)
 
-        webView = WebView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            visibility = View.INVISIBLE
+        try {
+            webView = WebView(this).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+                visibility = View.INVISIBLE
 
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            settings.databaseEnabled = true
-            settings.cacheMode = WebSettings.LOAD_DEFAULT
-            settings.useWideViewPort = true
-            settings.loadWithOverviewMode = true
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.databaseEnabled = true
+                settings.cacheMode = WebSettings.LOAD_DEFAULT
+                settings.useWideViewPort = true
+                settings.loadWithOverviewMode = true
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                }
+
+                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                addJavascriptInterface(SetupBridge(prefs), "NeotivSetup")
+
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        retryCount = 0
+                        statusText?.visibility = View.GONE
+                        webView?.visibility = View.VISIBLE
+                        injectPairingListener()
+                    }
+
+                    override fun onReceivedError(
+                        view: WebView?, request: WebResourceRequest?, error: WebResourceError?
+                    ) {
+                        if (request?.isForMainFrame == true) handleLoadError()
+                    }
+
+                    @Deprecated("Keep for older Android")
+                    override fun onReceivedError(
+                        view: WebView?, errorCode: Int, description: String?, failingUrl: String?
+                    ) {
+                        handleLoadError()
+                    }
+                }
+
+                webChromeClient = object : WebChromeClient() {
+                    override fun onConsoleMessage(msg: ConsoleMessage?): Boolean {
+                        android.util.Log.d("NeotivSetup", "${msg?.message()}")
+                        return true
+                    }
+                }
             }
 
-            setLayerType(View.LAYER_TYPE_HARDWARE, null)
-            addJavascriptInterface(SetupBridge(prefs), "NeotivSetup")
-
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    super.onPageFinished(view, url)
-                    retryCount = 0
-                    statusText?.visibility = View.GONE
-                    webView?.visibility = View.VISIBLE
-                    injectPairingListener()
-                }
-
-                override fun onReceivedError(
-                    view: WebView?, request: WebResourceRequest?, error: WebResourceError?
-                ) {
-                    if (request?.isForMainFrame == true) handleLoadError()
-                }
-
-                @Deprecated("Keep for older Android")
-                override fun onReceivedError(
-                    view: WebView?, errorCode: Int, description: String?, failingUrl: String?
-                ) {
-                    handleLoadError()
-                }
-            }
-
-            webChromeClient = object : WebChromeClient() {
-                override fun onConsoleMessage(msg: ConsoleMessage?): Boolean {
-                    android.util.Log.d("NeotivSetup", "${msg?.message()}")
-                    return true
-                }
-            }
+            root.addView(webView)
+            loadSetupPage()
+        } catch (e: Throwable) {
+            statusText?.visibility = View.VISIBLE
+            statusText?.text = "System Error: WebView missing or unsupported on this STB.\nDetails: ${e.message}"
+            android.util.Log.e("NeotivSetup", "WebView error", e)
         }
 
-        root.addView(webView)
-        setContentView(root)
-
-        loadSetupPage()
     }
 
     private fun loadSetupPage() {
