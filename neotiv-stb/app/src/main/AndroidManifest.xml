@@ -47,6 +47,7 @@
             android:launchMode="singleTask"
             android:stateNotNeeded="true"
             android:screenOrientation="landscape"
+            android:windowSoftInputMode="stateAlwaysHidden"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="false" />
 

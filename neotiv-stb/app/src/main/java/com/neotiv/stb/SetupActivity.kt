@@ -243,6 +243,14 @@ class SetupActivity : Activity() {
     }
 
     private fun launchDashboard() {
+        try {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            val view = currentFocus ?: View(this)
+            imm.hideSoftInputFromWindow(view.windowToken, 0)
+        } catch (e: Exception) {
+            // Ignore if input manager is missing
+        }
+
         startActivity(Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         })
