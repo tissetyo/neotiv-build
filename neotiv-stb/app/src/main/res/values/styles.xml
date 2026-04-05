@@ -1,7 +1,10 @@
 <resources>
-    <!-- Use a basic Android theme that works on ALL Android versions (API 21+) -->
-    <!-- NoActionBar variant avoids the deprecated NoTitleBar.Fullscreen that crashes on Android 12+ -->
-    <style name="Theme.NeotivTV" parent="@android:style/Theme.Material.NoActionBar.Fullscreen">
+    <!--
+        Use Theme.DeviceDefault — this guarantees the device's own native theme is used.
+        Works on all Android versions API 14+ and adapts to whatever the manufacturer provides.
+        BigdroidOS, stock Android TV, AOSP — all have their own DeviceDefault.
+    -->
+    <style name="Theme.NeotivTV" parent="@android:style/Theme.DeviceDefault.NoActionBar">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>

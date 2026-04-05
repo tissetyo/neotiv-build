@@ -54,36 +54,52 @@ class SetupActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        hideSystemUI()
+        try {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            hideSystemUI()
 
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-        // Save base URL from BuildConfig
-        prefs.edit().putString(KEY_BASE_URL, baseUrl).apply()
+            // Save base URL from BuildConfig
+            prefs.edit().putString(KEY_BASE_URL, baseUrl).apply()
 
-        // ── ADB headless setup ──
-        val intentSlug = intent.getStringExtra("hotel_slug")
-        val intentRoom = intent.getStringExtra("room_code")
-        if (!intentSlug.isNullOrBlank() && !intentRoom.isNullOrBlank()) {
-            prefs.edit()
-                .putString(KEY_HOTEL_SLUG, intentSlug)
-                .putString(KEY_ROOM_CODE, intentRoom)
-                .apply()
-            launchDashboard()
-            return
+            // ── ADB headless setup ──
+            val intentSlug = intent.getStringExtra("hotel_slug")
+            val intentRoom = intent.getStringExtra("room_code")
+            if (!intentSlug.isNullOrBlank() && !intentRoom.isNullOrBlank()) {
+                prefs.edit()
+                    .putString(KEY_HOTEL_SLUG, intentSlug)
+                    .putString(KEY_ROOM_CODE, intentRoom)
+                    .apply()
+                launchDashboard()
+                return
+            }
+
+            // ── Already configured → go to dashboard ──
+            val existingSlug = prefs.getString(KEY_HOTEL_SLUG, "") ?: ""
+            val existingRoom = prefs.getString(KEY_ROOM_CODE, "") ?: ""
+            if (existingSlug.isNotBlank() && existingRoom.isNotBlank()) {
+                launchDashboard()
+                return
+            }
+
+            // ── Load QR setup page immediately — zero typing ──
+            showQrSetup(prefs)
+        } catch (e: Throwable) {
+            // Show crash reason on screen so we can debug on BigdroidOS
+            val errorView = TextView(this).apply {
+                text = "Neotiv Crash Report:\n\n${e.javaClass.simpleName}: ${e.message}\n\n${e.stackTraceToString().take(800)}"
+                setTextColor(0xFFff6b6b.toInt())
+                textSize = 14f
+                setPadding(40, 40, 40, 40)
+            }
+            val root = FrameLayout(this).apply {
+                setBackgroundColor(0xFF0f172a.toInt())
+                addView(errorView)
+            }
+            setContentView(root)
+            android.util.Log.e("NeotivSTB", "FATAL onCreate crash", e)
         }
-
-        // ── Already configured → go to dashboard ──
-        val existingSlug = prefs.getString(KEY_HOTEL_SLUG, "") ?: ""
-        val existingRoom = prefs.getString(KEY_ROOM_CODE, "") ?: ""
-        if (existingSlug.isNotBlank() && existingRoom.isNotBlank()) {
-            launchDashboard()
-            return
-        }
-
-        // ── Load QR setup page immediately — zero typing ──
-        showQrSetup(prefs)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
