@@ -76,59 +76,11 @@ export default function SetupSTBPage() {
     doPair(hotelSlug, roomCode);
   };
 
-  // D-pad keyboard navigation between tabs and form fields
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const active = document.activeElement as HTMLElement | null;
+  // NOTE: No custom keyboard handler needed!
+  // WebView's built-in spatial navigation handles D-pad focus for
+  // standard HTML elements (<button>, <input>) natively.
+  // Adding custom handlers with preventDefault() would BLOCK native behavior.
 
-      if (e.key === 'Enter' && active && active.tagName === 'BUTTON') {
-        e.preventDefault();
-        // The D-pad bridge only fires 'keydown', so native 'click' might not trigger.
-        // We manually call .click() here.
-        active.click();
-        return;
-      }
-
-      // Tab switching with left/right when a tab is focused
-      const tabIndex = tabRefs.current.indexOf(active as HTMLButtonElement);
-      if (tabIndex >= 0) {
-        if (e.key === 'ArrowRight' && tabIndex < 2) {
-          e.preventDefault();
-          tabRefs.current[tabIndex + 1]?.focus();
-        } else if (e.key === 'ArrowLeft' && tabIndex > 0) {
-          e.preventDefault();
-          tabRefs.current[tabIndex - 1]?.focus();
-        } else if (e.key === 'ArrowDown' && hotelRef.current) {
-          e.preventDefault();
-          hotelRef.current?.focus();
-        }
-        return;
-      }
-
-      // Form field navigation with up/down arrows
-      if (active === hotelRef.current && e.key === 'ArrowDown') {
-        e.preventDefault();
-        roomRef.current?.focus();
-      } else if (active === roomRef.current && e.key === 'ArrowUp') {
-        e.preventDefault();
-        hotelRef.current?.focus();
-      } else if (active === roomRef.current && e.key === 'ArrowDown') {
-        e.preventDefault();
-        submitRef.current?.focus();
-      } else if (active === submitRef.current && e.key === 'ArrowUp') {
-        e.preventDefault();
-        roomRef.current?.focus();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Auto-focus first tab on mount
-  useEffect(() => {
-    setTimeout(() => tabRefs.current[0]?.focus(), 300);
-  }, []);
 
   const methods: { key: SetupMethod; icon: string; label: string }[] = [
     { key: 'remote', icon: '🎮', label: 'Remote Control' },

@@ -249,53 +249,10 @@ class SetupActivity : Activity() {
         finish()
     }
 
-    private fun dispatchJsKey(key: String, code: String, keyCode: Int) {
-        webView?.evaluateJavascript("""
-            (function() {
-                var target = document.activeElement || document.body;
-                var ev = new KeyboardEvent('keydown', {
-                    key: '$key',
-                    code: '$code',
-                    keyCode: $keyCode,
-                    which: $keyCode,
-                    bubbles: true,
-                    cancelable: true
-                });
-                target.dispatchEvent(ev);
-            })();
-        """.trimIndent(), null)
-    }
-
-    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
-        when (keyCode) {
-            android.view.KeyEvent.KEYCODE_DPAD_UP -> { dispatchJsKey("ArrowUp", "ArrowUp", 38); return true }
-            android.view.KeyEvent.KEYCODE_DPAD_DOWN -> { dispatchJsKey("ArrowDown", "ArrowDown", 40); return true }
-            android.view.KeyEvent.KEYCODE_DPAD_LEFT -> { dispatchJsKey("ArrowLeft", "ArrowLeft", 37); return true }
-            android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> { dispatchJsKey("ArrowRight", "ArrowRight", 39); return true }
-            android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER, android.view.KeyEvent.KEYCODE_NUMPAD_ENTER -> { dispatchJsKey("Enter", "Enter", 13); return true }
-            android.view.KeyEvent.KEYCODE_BACK -> { dispatchJsKey("Escape", "Escape", 27); return true }
-            android.view.KeyEvent.KEYCODE_0, android.view.KeyEvent.KEYCODE_NUMPAD_0 -> { dispatchJsKey("0", "Digit0", 48); return true }
-            android.view.KeyEvent.KEYCODE_1, android.view.KeyEvent.KEYCODE_NUMPAD_1 -> { dispatchJsKey("1", "Digit1", 49); return true }
-            android.view.KeyEvent.KEYCODE_2, android.view.KeyEvent.KEYCODE_NUMPAD_2 -> { dispatchJsKey("2", "Digit2", 50); return true }
-            android.view.KeyEvent.KEYCODE_3, android.view.KeyEvent.KEYCODE_NUMPAD_3 -> { dispatchJsKey("3", "Digit3", 51); return true }
-            android.view.KeyEvent.KEYCODE_4, android.view.KeyEvent.KEYCODE_NUMPAD_4 -> { dispatchJsKey("4", "Digit4", 52); return true }
-            android.view.KeyEvent.KEYCODE_5, android.view.KeyEvent.KEYCODE_NUMPAD_5 -> { dispatchJsKey("5", "Digit5", 53); return true }
-            android.view.KeyEvent.KEYCODE_6, android.view.KeyEvent.KEYCODE_NUMPAD_6 -> { dispatchJsKey("6", "Digit6", 54); return true }
-            android.view.KeyEvent.KEYCODE_7, android.view.KeyEvent.KEYCODE_NUMPAD_7 -> { dispatchJsKey("7", "Digit7", 55); return true }
-            android.view.KeyEvent.KEYCODE_8, android.view.KeyEvent.KEYCODE_NUMPAD_8 -> { dispatchJsKey("8", "Digit8", 56); return true }
-            android.view.KeyEvent.KEYCODE_9, android.view.KeyEvent.KEYCODE_NUMPAD_9 -> { dispatchJsKey("9", "Digit9", 57); return true }
-            android.view.KeyEvent.KEYCODE_DEL -> { dispatchJsKey("Backspace", "Backspace", 8); return true }
-            android.view.KeyEvent.KEYCODE_VOLUME_UP, android.view.KeyEvent.KEYCODE_VOLUME_DOWN, android.view.KeyEvent.KEYCODE_VOLUME_MUTE -> return super.onKeyDown(keyCode, event)
-        }
-        return true
-    }
-
-    override fun onKeyUp(keyCode: Int, event: android.view.KeyEvent?): Boolean {
-        return when (keyCode) {
-            android.view.KeyEvent.KEYCODE_VOLUME_UP, android.view.KeyEvent.KEYCODE_VOLUME_DOWN, android.view.KeyEvent.KEYCODE_VOLUME_MUTE -> super.onKeyUp(keyCode, event)
-            else -> true
-        }
-    }
+    // NOTE: No onKeyDown/dispatchJsKey override here!
+    // The setup page uses simple HTML <button> and <input> elements.
+    // WebView's BUILT-IN spatial navigation handles D-pad focus + click natively.
+    // (Unlike MainActivity's dashboard which needs a custom JS bridge for complex focus.)
 
     private fun hideSystemUI() {
         try {
