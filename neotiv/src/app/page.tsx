@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
 
 export default function PortalPage() {
   const router = useRouter();
@@ -9,6 +10,10 @@ export default function PortalPage() {
   const [hotelSlug, setHotelSlug] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState('');
+
+  useDpadNavigation({
+    selector: '.portal-card, .portal-back-btn, .portal-input, .portal-submit-btn, a[download]',
+  });
 
   const handleGuestGo = () => {
     if (!hotelSlug.trim() || !roomCode.trim()) {
@@ -113,6 +118,28 @@ export default function PortalPage() {
                     <li>✅ <b>Fixes Greyed-Out "Open" Button</b> on Generic Android 12 firmwares (Signed PROD Release).</li>
                     <li>✅ Better stability and generic AOSP compatability.</li>
                     <li><i>Recommended for all new setups.</i></li>
+                  </ul>
+                </div>
+
+                {/* Very Stable Release */}
+                <div style={{ padding: '16px', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.4)', background: 'rgba(59, 130, 246, 0.1)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', fontWeight: 600 }}>
+                        Neotiv Dashboard
+                        <span style={{ fontSize: '0.7rem', background: '#3b82f6', color: 'white', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px', verticalAlign: 'middle' }}>VERY STABLE</span>
+                      </h3>
+                      <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>Trusted Release</p>
+                    </div>
+                    <a href={`/neotiv-stb.apk?v=${Date.now()}`} download="neotiv-stb.apk" 
+                       style={{ background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                       Download
+                    </a>
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#cbd5e1', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                    <li>✅ <b>Very Stable Version</b> for most set top boxes.</li>
+                    <li>✅ Known to work fine on older STB units where newer versions might fail to open.</li>
+                    <li><i>Use this if you encounter issues with the latest version.</i></li>
                   </ul>
                 </div>
 
