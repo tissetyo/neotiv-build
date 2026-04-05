@@ -292,7 +292,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
   const displayFilter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
 
   return (
-      <div className="fixed inset-0 w-full h-full relative overflow-hidden bg-slate-900 tv-kiosk-mode"
+      <div className="fixed inset-0 w-full h-full overflow-hidden bg-slate-900 tv-kiosk-mode"
         style={{ 
           '--widget-dark-opacity': config.theme?.opacityDark ?? 0.60,
           '--widget-light-opacity': config.theme?.opacityLight ?? 0.82,
