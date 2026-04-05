@@ -251,10 +251,13 @@ class SetupActivity : Activity() {
             // Ignore if input manager is missing
         }
 
-        startActivity(Intent(this, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        })
-        finish()
+        // Wait 300ms for WindowManager to physically retract the keyboard bounding box
+        handler.postDelayed({
+            startActivity(Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            })
+            finish()
+        }, 300)
     }
 
     // NOTE: No onKeyDown/dispatchJsKey override here!

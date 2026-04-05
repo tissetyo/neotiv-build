@@ -216,7 +216,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
     ? new Date(`${store.checkoutDate}T00:00:00`).toDateString() === new Date().toDateString() 
     : false;
 
-  if (!mounted) return <div className="w-screen h-screen bg-slate-900" />;
+  if (!mounted) return <div className="fixed inset-0 w-full h-full bg-slate-900" />;
 
   const bgUrl = (store.tvLayoutConfig as any)?.theme?.bgUrl || store.backgroundUrl || '/bg-ocean.png';
 
@@ -292,7 +292,7 @@ export default function MainDashboardPage({ params }: { params: any }) {
   const displayFilter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
 
   return (
-      <div className="w-screen h-screen relative overflow-hidden bg-slate-900 tv-kiosk-mode"
+      <div className="fixed inset-0 w-full h-full relative overflow-hidden bg-slate-900 tv-kiosk-mode"
         style={{ 
           '--widget-dark-opacity': config.theme?.opacityDark ?? 0.60,
           '--widget-light-opacity': config.theme?.opacityLight ?? 0.82,
