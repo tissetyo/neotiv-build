@@ -109,7 +109,7 @@ class SetupActivity : Activity() {
         }
 
         statusText = TextView(this).apply {
-            text = "Loading QR setup..."
+            text = "Loading setup..."
             setTextColor(0xFFffffff.toInt())
             textSize = 18f
             gravity = Gravity.CENTER
@@ -187,7 +187,7 @@ class SetupActivity : Activity() {
 
     private fun loadSetupPage() {
         if (isNetworkAvailable()) {
-            statusText?.text = "Loading QR setup..."
+            statusText?.text = "Loading setup..."
             webView?.loadUrl("$baseUrl/setup-stb")
         } else {
             handleLoadError()
@@ -195,6 +195,8 @@ class SetupActivity : Activity() {
     }
 
     private fun injectPairingListener() {
+        // The new setup page calls NeotivSetup.onPaired() directly via JS bridge.
+        // This localStorage watcher is kept as a safety fallback.
         webView?.evaluateJavascript("""
             (function() {
                 if (window.__neotivSetupWatcher) return;
@@ -211,7 +213,7 @@ class SetupActivity : Activity() {
                         } catch(e) {}
                     }
                 };
-                console.log('[Neotiv] Pairing listener active');
+                console.log('[Neotiv] Setup bridge active (direct + localStorage fallback)');
             })();
         """.trimIndent(), null)
     }

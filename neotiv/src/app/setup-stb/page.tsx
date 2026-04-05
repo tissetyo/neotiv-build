@@ -1,123 +1,147 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import QRCode from 'react-qr-code';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
-type Step = 'loading' | 'qr' | 'paired';
+type SetupMethod = 'remote' | 'adb' | 'qr';
 
 export default function SetupSTBPage() {
-  const router = useRouter();
-  const [step, setStep] = useState<Step>('loading');
-  const [pairingCode, setPairingCode] = useState('');
-  const [expiresAt, setExpiresAt] = useState('');
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [method, setMethod] = useState<SetupMethod>('remote');
+  const [hotelSlug, setHotelSlug] = useState('');
+  const [roomCode, setRoomCode] = useState('');
+  const [status, setStatus] = useState<'idle' | 'pairing' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
   const [origin, setOrigin] = useState('');
-  const [error, setError] = useState('');
 
-  const [pairedRoom, setPairedRoom] = useState('');
-  const [pairedHotel, setPairedHotel] = useState('');
-  const [redirectUrl, setRedirectUrl] = useState('');
-  const [redirectCountdown, setRedirectCountdown] = useState(5);
+  const hotelRef = useRef<HTMLInputElement>(null);
+  const roomRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // Generate pairing code
-  const generateCode = useCallback(async () => {
-    setError('');
-    setStep('loading');
-    try {
-      const res = await fetch('/api/stb/generate-code', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to generate code');
-      setPairingCode(data.code);
-      setExpiresAt(data.expiresAt);
-      setStep('qr');
-    } catch (err: any) {
-      console.error('QR Generate Error:', err);
-      setError(err.message || 'Failed to generate code. Check server connection.');
-    }
-  }, []);
-
-  // Auto-start on mount
+  // Check URL params for auto-pair (supports /setup-stb?hotel=xxx&room=yyy)
   useEffect(() => {
     setOrigin(window.location.origin);
-    generateCode();
+    const params = new URLSearchParams(window.location.search);
+    const h = params.get('hotel');
+    const r = params.get('room');
+    if (h && r) {
+      setHotelSlug(h);
+      setRoomCode(r);
+      // Auto-pair after a brief delay so page renders
+      setTimeout(() => doPair(h, r), 500);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Countdown timer
-  useEffect(() => {
-    if (!expiresAt || step !== 'qr') return;
-    const tick = () => {
-      const remaining = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
-      setTimeLeft(remaining);
-      if (remaining <= 0) generateCode();
-    };
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [expiresAt, step, generateCode]);
+  const doPair = useCallback((slug: string, room: string) => {
+    if (!slug.trim() || !room.trim()) {
+      setErrorMsg('Please fill in both fields');
+      setStatus('error');
+      return;
+    }
 
-  // Poll for pairing
+    setStatus('pairing');
+    setErrorMsg('');
+
+    const finalSlug = slug.trim().toLowerCase();
+    const finalRoom = room.trim();
+
+    // Try native bridge first (running inside STB WebView)
+    try {
+      if (typeof (window as any).NeotivSetup !== 'undefined') {
+        (window as any).NeotivSetup.onPaired(finalSlug, finalRoom);
+        setStatus('success');
+        return;
+      }
+    } catch (e) {
+      console.warn('[Neotiv] Bridge call failed:', e);
+    }
+
+    // Fallback: save to localStorage (for browser testing / non-native)
+    try {
+      localStorage.setItem('neotiv_stb_setup', JSON.stringify({
+        hotelSlug: finalSlug,
+        roomCode: finalRoom,
+      }));
+    } catch {}
+
+    setStatus('success');
+
+    // Redirect to dashboard after a moment
+    setTimeout(() => {
+      window.location.href = `/${finalSlug}/dashboard/${finalRoom}/main`;
+    }, 2000);
+  }, []);
+
+  const handleSubmit = () => {
+    doPair(hotelSlug, roomCode);
+  };
+
+  // D-pad keyboard navigation between tabs and form fields
   useEffect(() => {
-    if (step !== 'qr' || !pairingCode) return;
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/stb/poll?code=${pairingCode}`);
-        const data = await res.json();
-        if (data.status === 'paired') {
-          if (data.sessionData && data.hotelSlug && data.roomCode) {
-            localStorage.setItem(
-              `neotiv_room_${data.hotelSlug}_${data.roomCode}`,
-              JSON.stringify(data.sessionData)
-            );
-            localStorage.setItem('neotiv_stb_setup', JSON.stringify({
-              hotelSlug: data.hotelSlug, roomCode: data.roomCode,
-            }));
-          }
-          setPairedRoom(data.roomCode);
-          setPairedHotel(data.sessionData?.hotelName || data.hotelSlug);
-          setRedirectUrl(data.redirectUrl);
-          setStep('paired');
-        } else if (data.status === 'expired') {
-          generateCode();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+
+      // Tab switching with left/right when a tab is focused
+      const tabIndex = tabRefs.current.indexOf(active as HTMLButtonElement);
+      if (tabIndex >= 0) {
+        if (e.key === 'ArrowRight' && tabIndex < 2) {
+          e.preventDefault();
+          tabRefs.current[tabIndex + 1]?.focus();
+        } else if (e.key === 'ArrowLeft' && tabIndex > 0) {
+          e.preventDefault();
+          tabRefs.current[tabIndex - 1]?.focus();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          hotelRef.current?.focus();
         }
-      } catch { /* retry */ }
+        return;
+      }
+
+      // Form field navigation with up/down arrows
+      if (active === hotelRef.current && e.key === 'ArrowDown') {
+        e.preventDefault();
+        roomRef.current?.focus();
+      } else if (active === roomRef.current && e.key === 'ArrowUp') {
+        e.preventDefault();
+        hotelRef.current?.focus();
+      } else if (active === roomRef.current && e.key === 'ArrowDown') {
+        e.preventDefault();
+        submitRef.current?.focus();
+      } else if (active === submitRef.current && e.key === 'ArrowUp') {
+        e.preventDefault();
+        roomRef.current?.focus();
+      }
     };
-    const interval = setInterval(poll, 3000);
-    poll();
-    return () => clearInterval(interval);
-  }, [step, pairingCode, generateCode]);
 
-  // Redirect after pairing
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Auto-focus first tab on mount
   useEffect(() => {
-    if (step !== 'paired' || !redirectUrl) return;
-    const interval = setInterval(() => {
-      setRedirectCountdown((c) => {
-        if (c <= 1) { clearInterval(interval); router.push(redirectUrl); return 0; }
-        return c - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [step, redirectUrl, router]);
+    setTimeout(() => tabRefs.current[0]?.focus(), 300);
+  }, []);
 
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+  const methods: { key: SetupMethod; icon: string; label: string }[] = [
+    { key: 'remote', icon: '🎮', label: 'Remote Control' },
+    { key: 'adb', icon: '💻', label: 'ADB Command' },
+    { key: 'qr', icon: '📱', label: 'QR Pairing' },
+  ];
 
-  // ═══════════════ PAIRED SUCCESS ═══════════════
-  if (step === 'paired') {
+  // ═══════════════ SUCCESS SCREEN ═══════════════
+  if (status === 'success') {
     return (
       <div className="stb-page">
         <div className="stb-center">
           <div className="stb-success-icon">✓</div>
-          <h1 className="stb-h1">Device Paired!</h1>
+          <h1 className="stb-h1">Device Configured!</h1>
           <p className="stb-sub">
-            Connected to <span className="stb-highlight">{pairedHotel}</span>
+            Hotel: <span className="stb-highlight">{hotelSlug}</span>
           </p>
-          <p className="stb-room">Room {pairedRoom}</p>
-          <div className="stb-box" style={{ marginTop: 32 }}>
-            <p className="stb-sub" style={{ marginBottom: 12 }}>
-              Launching dashboard in {redirectCountdown}s...
-            </p>
-            <div className="stb-progress-track">
-              <div className="stb-progress-bar" style={{ width: `${((5 - redirectCountdown) / 5) * 100}%` }} />
+          <p className="stb-room">Room {roomCode}</p>
+          <div className="stb-box" style={{ marginTop: 24 }}>
+            <p className="stb-sub">Launching dashboard...</p>
+            <div className="stb-progress-track" style={{ marginTop: 12 }}>
+              <div className="stb-progress-bar stb-progress-anim" />
             </div>
           </div>
         </div>
@@ -126,76 +150,141 @@ export default function SetupSTBPage() {
     );
   }
 
-  // ═══════════════ QR CODE SCREEN ═══════════════
-  if (step === 'qr' && pairingCode) {
-    const qrValue = `${origin}/stb-pair?code=${pairingCode}`;
-    return (
-      <div className="stb-page">
-        <div className="stb-center">
-          {/* QR Code */}
-          <div className="stb-qr-wrap">
-            <QRCode value={qrValue} size={220} level="H" />
-          </div>
-
-          {/* Pairing Code */}
-          <div style={{ marginTop: 20 }}>
-            <p className="stb-label">PAIRING CODE</p>
-            <div className="stb-code-row">
-              {pairingCode.split('').map((c, i) => (
-                <div key={i} className="stb-code-char">{c}</div>
-              ))}
-            </div>
-          </div>
-
-          {/* Timer + Status */}
-          <div className={`stb-timer ${timeLeft < 60 ? 'stb-timer-warn' : ''}`}>
-            ⏱ {formatTime(timeLeft)}
-          </div>
-          <div className="stb-waiting">
-            <div className="stb-dot" />
-            Waiting for staff to scan...
-          </div>
-
-          {/* Instructions */}
-          <div className="stb-box stb-instructions">
-            <p className="stb-label" style={{ marginBottom: 12 }}>📱 STAFF: SCAN FROM YOUR PHONE</p>
-            {[
-              'Open this domain on your phone',
-              'Login as Staff → go to Rooms',
-              'Select the room → tap "Pair STB"',
-              'Enter the code above',
-            ].map((t, i) => (
-              <div key={i} className="stb-step">
-                <div className="stb-step-n">{i + 1}</div>
-                <span className="stb-step-t">{t}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <style>{css}</style>
-      </div>
-    );
-  }
-
-  // ═══════════════ LOADING / ERROR ═══════════════
+  // ═══════════════ MAIN SETUP SCREEN ═══════════════
   return (
     <div className="stb-page">
       <div className="stb-center">
+        {/* Header */}
         <div className="stb-logo">N</div>
         <h1 className="stb-h1">Neotiv STB Setup</h1>
-        {error ? (
-          <>
-            <div className="stb-error">{error}</div>
-            <button onClick={generateCode} className="stb-btn" style={{ marginTop: 16 }}>
-              ↻ Try Again
+        <p className="stb-sub" style={{ marginBottom: 20 }}>Choose a setup method</p>
+
+        {/* Method Tabs */}
+        <div className="stb-tabs">
+          {methods.map((m, i) => (
+            <button
+              key={m.key}
+              ref={(el) => { tabRefs.current[i] = el; }}
+              className={`stb-tab ${method === m.key ? 'stb-tab-active' : ''}`}
+              onClick={() => setMethod(m.key)}
+              data-focusable="true"
+            >
+              <span className="stb-tab-icon">{m.icon}</span>
+              <span className="stb-tab-label">{m.label}</span>
             </button>
-          </>
-        ) : (
-          <>
-            <div className="stb-spinner" />
-            <p className="stb-sub">Generating pairing code...</p>
-          </>
+          ))}
+        </div>
+
+        {/* ─── Remote Control Form ─── */}
+        {method === 'remote' && (
+          <div className="stb-panel">
+            <p className="stb-panel-desc">
+              Use the remote control to enter your hotel details below.
+              Navigate with <span className="stb-key">▲▼</span> arrows, type with the on-screen keyboard.
+            </p>
+
+            <div className="stb-field">
+              <label className="stb-label">HOTEL ID</label>
+              <input
+                ref={hotelRef}
+                type="text"
+                value={hotelSlug}
+                onChange={(e) => { setHotelSlug(e.target.value); setStatus('idle'); }}
+                placeholder="e.g. amartha-hotel"
+                className="stb-input"
+                data-focusable="true"
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="stb-field">
+              <label className="stb-label">ROOM CODE</label>
+              <input
+                ref={roomRef}
+                type="text"
+                value={roomCode}
+                onChange={(e) => { setRoomCode(e.target.value); setStatus('idle'); }}
+                placeholder="e.g. 101"
+                className="stb-input"
+                data-focusable="true"
+                autoComplete="off"
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
+              />
+            </div>
+
+            {status === 'error' && errorMsg && (
+              <div className="stb-error">{errorMsg}</div>
+            )}
+
+            <button
+              ref={submitRef}
+              onClick={handleSubmit}
+              disabled={!hotelSlug.trim() || !roomCode.trim() || status === 'pairing'}
+              className={`stb-btn ${hotelSlug.trim() && roomCode.trim() ? 'stb-btn-active' : ''}`}
+              data-focusable="true"
+            >
+              {status === 'pairing' ? '⏳ Connecting...' : '📺 Connect Device'}
+            </button>
+          </div>
         )}
+
+        {/* ─── ADB Command ─── */}
+        {method === 'adb' && (
+          <div className="stb-panel">
+            <p className="stb-panel-desc">
+              For bulk provisioning, use ADB to configure the device without any UI interaction.
+            </p>
+
+            <div className="stb-code-block">
+              <div className="stb-code-header">Terminal Command</div>
+              <pre className="stb-pre">{`adb shell am start \\
+  -n com.neotiv.stb/.SetupActivity \\
+  --es hotel_slug "your-hotel-slug" \\
+  --es room_code "101"`}</pre>
+            </div>
+
+            <div className="stb-code-block" style={{ marginTop: 12 }}>
+              <div className="stb-code-header">URL Parameter (Browser)</div>
+              <pre className="stb-pre">{`${origin || 'https://your-domain.com'}/setup-stb?hotel=your-hotel-slug&room=101`}</pre>
+            </div>
+
+            <div className="stb-info-box">
+              <span className="stb-info-icon">💡</span>
+              <span>The ADB method works immediately — no Wi-Fi setup page needed. Perfect for provisioning multiple devices.</span>
+            </div>
+          </div>
+        )}
+
+        {/* ─── QR Pairing (Coming Soon) ─── */}
+        {method === 'qr' && (
+          <div className="stb-panel">
+            <div className="stb-coming-soon">
+              <div className="stb-qr-placeholder">
+                <div className="stb-qr-grid">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className="stb-qr-cell" />
+                  ))}
+                </div>
+              </div>
+              <h2 className="stb-h2">QR Pairing</h2>
+              <p className="stb-sub">Coming Soon</p>
+              <p className="stb-panel-desc" style={{ marginTop: 12 }}>
+                Scan a QR code from your phone to instantly pair this device to a room.
+                No typing required.
+              </p>
+              <div className="stb-badge">🚧 In Development</div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer hint */}
+        <div className="stb-footer">
+          <span className="stb-key">◀ ▶</span> Switch tab
+          <span className="stb-sep">·</span>
+          <span className="stb-key">▲ ▼</span> Navigate
+          <span className="stb-sep">·</span>
+          <span className="stb-key">OK</span> Select
+        </div>
       </div>
       <style>{css}</style>
     </div>
@@ -208,7 +297,7 @@ const css = `
 
   .stb-page {
     min-height: 100vh;
-    background: #0f172a;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
     color: white;
     font-family: system-ui, -apple-system, sans-serif;
     display: flex;
@@ -217,95 +306,191 @@ const css = `
     padding: 16px;
   }
 
-  .stb-center { text-align: center; max-width: 500px; width: 100%; }
+  .stb-center { text-align: center; max-width: 520px; width: 100%; }
 
   .stb-logo {
     width: 56px; height: 56px; border-radius: 14px;
-    background: #14b8a6;
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
     display: inline-flex; align-items: center; justify-content: center;
     font-size: 24px; font-weight: 700; margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(20,184,166,0.3);
   }
 
-  .stb-h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
-  .stb-sub { color: #94a3b8; font-size: 0.9rem; }
+  .stb-h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+  .stb-h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+  .stb-sub { color: #94a3b8; font-size: 0.85rem; }
   .stb-highlight { color: #5eead4; font-weight: 600; }
-  .stb-room { font-size: 2.5rem; font-weight: 700; color: #14b8a6; margin-top: 12px; }
+  .stb-room { font-size: 2.5rem; font-weight: 700; color: #14b8a6; margin-top: 8px; }
 
-  .stb-qr-wrap {
-    background: white; border-radius: 16px; padding: 20px;
-    display: inline-block;
+  /* ─── Tabs ─── */
+  .stb-tabs {
+    display: flex; gap: 6px; margin-bottom: 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 14px; padding: 5px;
+    border: 1px solid rgba(255,255,255,0.06);
   }
 
+  .stb-tab {
+    flex: 1; padding: 10px 8px; border: 2px solid transparent;
+    background: transparent; border-radius: 10px; cursor: pointer;
+    color: #64748b; transition: all 0.2s ease;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .stb-tab:focus {
+    outline: none; border-color: #14b8a6;
+    box-shadow: 0 0 0 2px rgba(20,184,166,0.3);
+  }
+  .stb-tab-active {
+    background: rgba(20,184,166,0.12); color: #5eead4;
+    border-color: rgba(20,184,166,0.3);
+  }
+  .stb-tab-icon { font-size: 1.2rem; }
+  .stb-tab-label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ─── Panel ─── */
+  .stb-panel {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px; padding: 20px;
+    text-align: left;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .stb-panel-desc {
+    color: #94a3b8; font-size: 0.8rem; line-height: 1.5;
+    margin-bottom: 16px;
+  }
+
+  /* ─── Form ─── */
+  .stb-field { margin-bottom: 14px; }
   .stb-label {
-    color: #64748b; font-size: 0.7rem; font-weight: 600;
-    letter-spacing: 2px; margin-bottom: 8px;
+    display: block; color: #64748b; font-size: 0.7rem;
+    font-weight: 600; letter-spacing: 1.5px; margin-bottom: 6px;
   }
 
-  .stb-code-row { display: flex; justify-content: center; gap: 6px; }
-  .stb-code-char {
-    width: 38px; height: 46px; border-radius: 10px;
-    background: rgba(20,184,166,0.15); border: 2px solid rgba(20,184,166,0.3);
+  .stb-input {
+    width: 100%; padding: 14px 16px; font-size: 1rem;
+    background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 10px; color: white; outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .stb-input:focus {
+    border-color: #14b8a6;
+    background: rgba(20,184,166,0.08);
+    box-shadow: 0 0 0 3px rgba(20,184,166,0.15);
+  }
+  .stb-input::placeholder { color: #475569; }
+
+  .stb-btn {
+    width: 100%; padding: 14px; font-size: 1rem; font-weight: 600;
+    background: rgba(255,255,255,0.06); color: #64748b;
+    border: 2px solid transparent; border-radius: 12px; cursor: pointer;
+    transition: all 0.2s ease; margin-top: 4px;
+  }
+  .stb-btn-active {
+    background: linear-gradient(135deg, #14b8a6, #0d9488); color: white;
+    box-shadow: 0 4px 16px rgba(20,184,166,0.3);
+  }
+  .stb-btn:focus {
+    outline: none; border-color: #5eead4;
+    box-shadow: 0 0 0 3px rgba(20,184,166,0.3);
+  }
+  .stb-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .stb-error {
+    background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 10px; padding: 10px 14px; color: #fca5a5;
+    font-size: 0.8rem; margin-bottom: 12px; text-align: center;
+  }
+
+  /* ─── ADB Code Block ─── */
+  .stb-code-block {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; overflow: hidden;
+  }
+  .stb-code-header {
+    padding: 8px 14px; background: rgba(255,255,255,0.04);
+    font-size: 0.65rem; color: #64748b; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .stb-pre {
+    padding: 14px; font-size: 0.78rem; color: #5eead4;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    white-space: pre-wrap; word-break: break-all;
+    line-height: 1.6; margin: 0;
+  }
+
+  .stb-info-box {
+    margin-top: 14px; padding: 12px 14px; display: flex; gap: 10px;
+    background: rgba(20,184,166,0.08); border: 1px solid rgba(20,184,166,0.15);
+    border-radius: 10px; color: #94a3b8; font-size: 0.75rem; line-height: 1.5;
+    align-items: flex-start;
+  }
+  .stb-info-icon { font-size: 1rem; flex-shrink: 0; }
+
+  /* ─── QR Coming Soon ─── */
+  .stb-coming-soon { text-align: center; padding: 16px 0; }
+
+  .stb-qr-placeholder {
+    width: 120px; height: 120px; margin: 0 auto 20px;
+    background: rgba(255,255,255,0.04); border-radius: 16px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px; font-weight: 700; color: #5eead4; font-family: monospace;
+    border: 2px dashed rgba(255,255,255,0.1);
+    position: relative; overflow: hidden;
+  }
+  .stb-qr-placeholder::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(20,184,166,0.08) 100%);
   }
 
-  .stb-timer {
-    margin-top: 16px; display: inline-block; padding: 5px 14px;
-    border-radius: 6px; font-size: 13px; color: #94a3b8;
-    background: rgba(255,255,255,0.05);
+  .stb-qr-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    width: 50px; opacity: 0.3;
   }
-  .stb-timer-warn { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .stb-qr-cell {
+    width: 14px; height: 14px; border-radius: 3px;
+    background: white;
+  }
+  .stb-qr-cell:nth-child(2), .stb-qr-cell:nth-child(4), .stb-qr-cell:nth-child(6), .stb-qr-cell:nth-child(8) {
+    background: transparent;
+  }
 
-  .stb-waiting {
-    margin-top: 10px; display: flex; align-items: center;
-    justify-content: center; gap: 8px; color: #64748b; font-size: 0.8rem;
+  .stb-badge {
+    display: inline-block; margin-top: 16px;
+    padding: 6px 14px; border-radius: 20px;
+    background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25);
+    color: #fbbf24; font-size: 0.7rem; font-weight: 600;
   }
-  .stb-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: #14b8a6;
-    animation: blink 1.5s ease-in-out infinite;
+
+  /* ─── D-pad hint keys ─── */
+  .stb-key {
+    display: inline-block; padding: 2px 7px; font-size: 0.65rem;
+    background: rgba(255,255,255,0.08); border-radius: 4px;
+    color: #94a3b8; font-weight: 600; margin: 0 2px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* ─── Footer ─── */
+  .stb-footer {
+    margin-top: 20px; color: #475569; font-size: 0.7rem;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .stb-sep { color: #334155; }
+
+  /* ─── Success ─── */
+  .stb-success-icon {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, #14b8a6, #10b981);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 36px; margin-bottom: 20px;
+    box-shadow: 0 8px 30px rgba(20,184,166,0.4);
+    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .stb-box {
     background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
     border-radius: 14px; padding: 16px;
-  }
-  .stb-instructions { margin-top: 24px; text-align: left; }
-
-  .stb-step {
-    display: flex; gap: 10px; align-items: center;
-    padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
-  }
-  .stb-step:last-child { border-bottom: none; }
-  .stb-step-n {
-    width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
-    background: rgba(20,184,166,0.15); display: flex; align-items: center;
-    justify-content: center; color: #5eead4; font-size: 12px; font-weight: 700;
-  }
-  .stb-step-t { color: #cbd5e1; font-size: 0.8rem; }
-
-  .stb-error {
-    background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
-    border-radius: 10px; padding: 12px; color: #fca5a5;
-    font-size: 0.85rem; margin-top: 16px;
-  }
-
-  .stb-btn {
-    padding: 10px 24px; background: #14b8a6; color: white;
-    border: none; border-radius: 10px; font-size: 0.9rem;
-    font-weight: 600; cursor: pointer;
-  }
-
-  .stb-spinner {
-    width: 40px; height: 40px; margin: 20px auto;
-    border: 3px solid rgba(20,184,166,0.2); border-top-color: #14b8a6;
-    border-radius: 50%; animation: spin 0.7s linear infinite;
-  }
-
-  .stb-success-icon {
-    width: 80px; height: 80px; border-radius: 50%;
-    background: #14b8a6; display: inline-flex;
-    align-items: center; justify-content: center;
-    font-size: 36px; margin-bottom: 20px;
   }
 
   .stb-progress-track {
@@ -316,23 +501,27 @@ const css = `
     height: 100%; border-radius: 3px; background: #14b8a6;
     transition: width 1s linear;
   }
-
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-  @keyframes spin { to{transform:rotate(360deg)} }
-
-  @media (max-width: 480px) {
-    .stb-h1 { font-size: 1.2rem; }
-    .stb-code-char { width: 32px; height: 40px; font-size: 17px; }
-    .stb-qr-wrap { padding: 14px; }
-    .stb-qr-wrap svg { width: 160px !important; height: 160px !important; }
-    .stb-room { font-size: 2rem; }
+  .stb-progress-anim {
+    animation: progress 2s ease-in-out forwards;
   }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes progress { from { width: 0%; } to { width: 100%; } }
 
   @media (min-width: 1280px) {
     .stb-h1 { font-size: 2rem; }
-    .stb-code-char { width: 46px; height: 54px; font-size: 22px; }
-    .stb-qr-wrap { padding: 28px; }
-    .stb-qr-wrap svg { width: 280px !important; height: 280px !important; }
-    .stb-step-t { font-size: 0.9rem; }
+    .stb-center { max-width: 560px; }
+    .stb-input { font-size: 1.1rem; padding: 16px 18px; }
+    .stb-tab-label { font-size: 0.7rem; }
+    .stb-room { font-size: 3rem; }
+  }
+
+  @media (max-width: 480px) {
+    .stb-h1 { font-size: 1.2rem; }
+    .stb-tab { padding: 8px 6px; }
+    .stb-tab-icon { font-size: 1rem; }
+    .stb-tab-label { font-size: 0.55rem; }
+    .stb-room { font-size: 2rem; }
   }
 `;
