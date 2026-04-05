@@ -93,9 +93,6 @@ class MainActivity : Activity() {
                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             }
 
-            // Hardware acceleration for smooth CSS animations
-            setLayerType(View.LAYER_TYPE_HARDWARE, null)
-
             // Add JS interface for native communication
             addJavascriptInterface(NeotivBridge(), "NeotivNative")
 

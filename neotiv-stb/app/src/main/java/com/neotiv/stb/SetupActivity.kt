@@ -123,7 +123,7 @@ class SetupActivity : Activity() {
                     settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                 }
 
-                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                // Removed setLayerType(LAYER_TYPE_HARDWARE) since it crashes old STBs
                 addJavascriptInterface(SetupBridge(prefs), "NeotivSetup")
 
                 webViewClient = object : WebViewClient() {
@@ -158,8 +158,10 @@ class SetupActivity : Activity() {
             }
 
             root.addView(webView)
+            setContentView(root) // FIX: attach it to the window!
             loadSetupPage()
         } catch (e: Throwable) {
+            setContentView(root)
             statusText?.visibility = View.VISIBLE
             statusText?.text = "System Error: WebView missing or unsupported on this STB.\nDetails: ${e.message}"
             android.util.Log.e("NeotivSetup", "WebView error", e)
