@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function PortalPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<'choose' | 'guest' | 'staff'>('choose');
+  const [mode, setMode] = useState<'choose' | 'guest' | 'staff' | 'downloads'>('choose');
   const [hotelSlug, setHotelSlug] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState('');
@@ -69,12 +69,74 @@ export default function PortalPage() {
               <p className="portal-card-desc">Front office operations, hotel management, and guest services</p>
             </button>
 
-            {/* STB Setup Card - APPEND ?v=Date.now() to bust aggressive TV browser cache */}
-            <a href={`/neotiv-stb.apk?v=${Date.now()}`} download="neotiv-stb.apk" className="portal-card" style={{ textDecoration: 'none' }} tabIndex={0}>
-              <div className="portal-card-icon" style={{ background: 'rgba(245,158,11,0.15)' }}>📥</div>
-              <h2 className="portal-card-title">Download STB App</h2>
-              <p className="portal-card-desc">Download & install the Neotiv TV app, then scan QR to pair with a room</p>
-            </a>
+            {/* STB Setup Card - Opens Version Menu */}
+            <button
+              onClick={() => { setMode('downloads'); setError(''); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setMode('downloads'); setError(''); } }}
+              className="portal-card"
+              tabIndex={0}
+            >
+               <div className="portal-card-icon" style={{ background: 'rgba(245,158,11,0.15)' }}>📥</div>
+               <h2 className="portal-card-title">Download STB App</h2>
+               <p className="portal-card-desc">View and download the latest Neotiv TV setups for specific hardware</p>
+            </button>
+          </div>
+        )}
+
+        {/* DOWNLOADS MODE */}
+        {mode === 'downloads' && (
+          <div className="portal-form-wrap" style={{ maxWidth: '600px' }}>
+            <div className="portal-form-card" style={{ textAlign: 'left' }}>
+              <div className="portal-form-header">
+                <button onClick={() => { setMode('choose'); setError(''); }} className="portal-back-btn" tabIndex={0}>←</button>
+                <h2 className="portal-form-title">STB App Downloads</h2>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                
+                {/* Latest Release */}
+                <div style={{ padding: '16px', borderRadius: '12px', border: '1px solid rgba(20, 184, 166, 0.4)', background: 'rgba(20, 184, 166, 0.1)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', fontWeight: 600 }}>
+                        Neotiv Dashboard v1.4.0
+                        <span style={{ fontSize: '0.7rem', background: '#14b8a6', color: 'white', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px', verticalAlign: 'middle' }}>LATEST / STABLE</span>
+                      </h3>
+                      <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>Released: April 2026</p>
+                    </div>
+                    <a href={`/neotiv-stb-v1.4.0.apk?v=${Date.now()}`} download="neotiv-stb-v1.4.0.apk" 
+                       style={{ background: '#14b8a6', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                       Download
+                    </a>
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#cbd5e1', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                    <li>✅ <b>Fixes Black Screen</b> on older rooted Android 6/7 TV Boxes (removes forced hardware acceleration).</li>
+                    <li>✅ <b>Fixes Greyed-Out "Open" Button</b> on Generic Android 12 firmwares (Signed PROD Release).</li>
+                    <li>✅ Better stability and generic AOSP compatability.</li>
+                    <li><i>Recommended for all new setups.</i></li>
+                  </ul>
+                </div>
+
+                {/* Legacy Release */}
+                <div style={{ padding: '16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(255, 255, 255, 0.03)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', fontWeight: 600 }}>Neotiv Dashboard v1.1.0</h3>
+                      <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem' }}>Legacy TV Release</p>
+                    </div>
+                    <a href={`/neotiv-stb-legacy.apk?v=${Date.now()}`} download="neotiv-stb-legacy.apk" 
+                       style={{ background: '#475569', color: 'white', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                       Download
+                    </a>
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: '#94a3b8', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                    <li>Original Leanback Launcher support.</li>
+                    <li>Forces Hardware GPU acceleration (May cause black screen on old cheap units).</li>
+                    <li><i>Only use if v1.4.0 cannot be installed.</i></li>
+                  </ul>
+                </div>
+
+              </div>
+            </div>
           </div>
         )}
 
