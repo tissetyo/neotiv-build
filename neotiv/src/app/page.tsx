@@ -66,10 +66,10 @@ export default function PortalPage() {
             </button>
 
             {/* STB Setup Card */}
-            <a href="/setup-stb" className="portal-card" style={{ textDecoration: 'none' }}>
-              <div className="portal-card-icon" style={{ background: 'rgba(245,158,11,0.15)' }}>⚙️</div>
-              <h2 className="portal-card-title">Set-Top Box Setup</h2>
-              <p className="portal-card-desc">Install and pair a new STB device using QR code — no typing required</p>
+            <a href="/neotiv-stb.apk" download="neotiv-stb.apk" className="portal-card" style={{ textDecoration: 'none' }}>
+              <div className="portal-card-icon" style={{ background: 'rgba(245,158,11,0.15)' }}>📥</div>
+              <h2 className="portal-card-title">Download STB App</h2>
+              <p className="portal-card-desc">Download & install the Neotiv TV app, then scan QR to pair with a room</p>
             </a>
           </div>
         )}
