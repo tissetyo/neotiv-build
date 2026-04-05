@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDpadNavigation } from '@/lib/hooks/useDpadNavigation';
 
@@ -14,6 +14,16 @@ export default function PortalPage() {
   useDpadNavigation({
     selector: '.portal-card, .portal-back-btn, .portal-input, .portal-submit-btn, a[download]',
   });
+
+  useEffect(() => {
+    // Automatically focus the first focusable element when the mode changes
+    // This removes the need to press an arrow key before clicking "Enter" on STBs!
+    const timer = setTimeout(() => {
+      const firstValid = document.querySelector('.portal-card, .portal-back-btn, .portal-input') as HTMLElement;
+      if (firstValid) firstValid.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [mode]);
 
   const handleGuestGo = () => {
     if (!hotelSlug.trim() || !roomCode.trim()) {

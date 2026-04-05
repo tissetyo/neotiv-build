@@ -200,7 +200,7 @@ export function useDpadNavigation(options?: {
     
     const tryFocus = () => {
       const elements = getFocusableElements();
-      const hasActiveFocus = document.activeElement && document.activeElement.classList.contains(selector.replace('.', ''));
+      const hasActiveFocus = document.activeElement && document.activeElement.matches(selector);
       
       if (elements.length > 0 && !hasActiveFocus) {
         elements[0].focus();
