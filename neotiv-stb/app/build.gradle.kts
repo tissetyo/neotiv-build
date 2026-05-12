@@ -11,14 +11,14 @@ android {
         applicationId = "com.neotiv.stb"
         minSdk = 21
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.4.0"
+        versionCode = 7
+        versionName = "2.0.0"
 
         // ═══════════════════════════════════════════════
         // SET YOUR NEOTIV DOMAIN HERE — this is baked into the APK
         // so STB users never need to type anything
         // ═══════════════════════════════════════════════
-        buildConfigField("String", "NEOTIV_BASE_URL", "\"https://neotiv.vercel.app\"")
+        buildConfigField("String", "NEOTIV_BASE_URL", "\"https://neoscreen.site\"")
     }
 
     buildFeatures {

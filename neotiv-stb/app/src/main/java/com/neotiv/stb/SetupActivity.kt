@@ -22,8 +22,8 @@ import android.widget.TextView
 /**
  * Zero-typing setup:
  * 1. App opens → loads {BuildConfig.NEOTIV_BASE_URL}/setup-stb
- * 2. QR code appears automatically on the TV
- * 3. Staff scans from phone → pairs device to a room
+ * 2. A six-digit pairing code appears automatically on the TV
+ * 3. Front Office selects the room and enters the TV code
  * 4. JS bridge detects pairing → saves config → dashboard launches
  *
  * The domain URL is baked into the APK via build.gradle.kts buildConfigField,
@@ -31,7 +31,7 @@ import android.widget.TextView
  *
  * ADB headless setup also supported:
  *   adb shell am start -n com.neotiv.stb/.SetupActivity \
- *     --es hotel_slug "amartha-bali" --es room_code "101"
+ *     --es hotel_slug "amartha-bali" --es room_code "101" --es room_session_token "..."
  */
 class SetupActivity : Activity() {
 
@@ -40,6 +40,7 @@ class SetupActivity : Activity() {
         private const val KEY_BASE_URL = "base_url"
         private const val KEY_HOTEL_SLUG = "hotel_slug"
         private const val KEY_ROOM_CODE = "room_code"
+        private const val KEY_ROOM_TOKEN = "room_session_token"
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -47,9 +48,11 @@ class SetupActivity : Activity() {
     private var statusText: TextView? = null
     private var retryCount = 0
 
-    // Domain URL comes from BuildConfig — set in build.gradle.kts
+    // Domain URL comes from BuildConfig by default, but ADB can override it for staging.
     private val baseUrl: String
-        get() = BuildConfig.NEOTIV_BASE_URL.trimEnd('/')
+        get() = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_BASE_URL, BuildConfig.NEOTIV_BASE_URL)
+            ?.trimEnd('/') ?: BuildConfig.NEOTIV_BASE_URL.trimEnd('/')
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,15 +64,18 @@ class SetupActivity : Activity() {
             val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
             // Save base URL from BuildConfig
-            prefs.edit().putString(KEY_BASE_URL, baseUrl).apply()
+            val intentBaseUrl = intent.getStringExtra("base_url")?.trimEnd('/')
+            prefs.edit().putString(KEY_BASE_URL, intentBaseUrl ?: baseUrl).apply()
 
             // ── ADB headless setup ──
             val intentSlug = intent.getStringExtra("hotel_slug")
             val intentRoom = intent.getStringExtra("room_code")
-            if (!intentSlug.isNullOrBlank() && !intentRoom.isNullOrBlank()) {
+            val intentToken = intent.getStringExtra("room_session_token")
+            if (!intentSlug.isNullOrBlank() && !intentRoom.isNullOrBlank() && !intentToken.isNullOrBlank()) {
                 prefs.edit()
                     .putString(KEY_HOTEL_SLUG, intentSlug)
                     .putString(KEY_ROOM_CODE, intentRoom)
+                    .putString(KEY_ROOM_TOKEN, intentToken)
                     .apply()
                 launchDashboard()
                 return
@@ -78,7 +84,8 @@ class SetupActivity : Activity() {
             // ── Already configured → go to dashboard ──
             val existingSlug = prefs.getString(KEY_HOTEL_SLUG, "") ?: ""
             val existingRoom = prefs.getString(KEY_ROOM_CODE, "") ?: ""
-            if (existingSlug.isNotBlank() && existingRoom.isNotBlank()) {
+            val existingToken = prefs.getString(KEY_ROOM_TOKEN, "") ?: ""
+            if (existingSlug.isNotBlank() && existingRoom.isNotBlank() && existingToken.isNotBlank()) {
                 launchDashboard()
                 return
             }
@@ -207,8 +214,8 @@ class SetupActivity : Activity() {
                     if (key === 'neotiv_stb_setup') {
                         try {
                             var d = JSON.parse(value);
-                            if (d.hotelSlug && d.roomCode) {
-                                NeotivSetup.onPaired(d.hotelSlug, d.roomCode);
+                            if (d.hotelSlug && d.roomCode && d.roomSessionToken) {
+                                NeotivSetup.onPaired(d.hotelSlug, d.roomCode, d.roomSessionToken);
                             }
                         } catch(e) {}
                     }
@@ -302,10 +309,11 @@ class SetupActivity : Activity() {
 
     inner class SetupBridge(private val prefs: android.content.SharedPreferences) {
         @JavascriptInterface
-        fun onPaired(hotelSlug: String, roomCode: String) {
+        fun onPaired(hotelSlug: String, roomCode: String, roomSessionToken: String) {
             prefs.edit()
                 .putString(KEY_HOTEL_SLUG, hotelSlug)
                 .putString(KEY_ROOM_CODE, roomCode)
+                .putString(KEY_ROOM_TOKEN, roomSessionToken)
                 .apply()
             handler.post { launchDashboard() }
         }

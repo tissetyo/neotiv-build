@@ -43,7 +43,8 @@ class MainActivity : Activity() {
         private const val KEY_BASE_URL = "base_url"
         private const val KEY_HOTEL_SLUG = "hotel_slug"
         private const val KEY_ROOM_CODE = "room_code"
-        private const val DEFAULT_BASE_URL = "https://your-domain.com"
+        private const val KEY_ROOM_TOKEN = "room_session_token"
+        private const val DEFAULT_BASE_URL = "https://neoscreen.site"
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -194,17 +195,21 @@ class MainActivity : Activity() {
         val baseUrl = prefs.getString(KEY_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL
         val hotelSlug = prefs.getString(KEY_HOTEL_SLUG, "") ?: ""
         val roomCode = prefs.getString(KEY_ROOM_CODE, "") ?: ""
+        val roomToken = prefs.getString(KEY_ROOM_TOKEN, "") ?: ""
 
-        if (hotelSlug.isEmpty() || roomCode.isEmpty()) {
+        if (hotelSlug.isEmpty() || roomCode.isEmpty() || roomToken.isEmpty()) {
             startActivity(Intent(this, SetupActivity::class.java))
             finish()
             return
         }
 
-        val dashboardUrl = "${baseUrl}/${hotelSlug}/dashboard/${roomCode}"
+        val dashboardUrl = "${baseUrl.trimEnd('/')}/d/${hotelSlug}/${roomCode}/main"
 
         if (isNetworkAvailable()) {
-            statusText.text = "Loading Neotiv Dashboard..."
+            statusText.text = "Loading Neoscreen Dashboard..."
+            CookieManager.getInstance().setAcceptCookie(true)
+            CookieManager.getInstance().setCookie(baseUrl, "neotiv_room_session=$roomToken; Path=/; SameSite=Lax")
+            CookieManager.getInstance().flush()
             webView.loadUrl(dashboardUrl)
         } else {
             handleLoadError()
@@ -382,6 +387,44 @@ class MainActivity : Activity() {
                     finishAffinity()
                     System.exit(0)
                 }
+            }
+        }
+
+        @JavascriptInterface
+        fun openSystemSettings() {
+            handler.post {
+                try {
+                    startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(this@MainActivity, "Cannot open settings", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun getNetworkInfo(): String {
+            return try {
+                val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                val isConnected = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    val network = cm.activeNetwork
+                    val capabilities = cm.getNetworkCapabilities(network)
+                    capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+                } else {
+                    @Suppress("DEPRECATION")
+                    cm.activeNetworkInfo?.isConnected == true
+                }
+
+                val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+                val ssid = wifiManager?.connectionInfo?.ssid?.replace("\"", "") ?: "Unknown"
+                val rssi = wifiManager?.connectionInfo?.rssi ?: -100
+                val signalLevel = android.net.wifi.WifiManager.calculateSignalLevel(rssi, 5)
+                val ip = wifiManager?.connectionInfo?.ipAddress?.let { ip ->
+                    "${ip and 0xFF}.${ip shr 8 and 0xFF}.${ip shr 16 and 0xFF}.${ip shr 24 and 0xFF}"
+                } ?: "0.0.0.0"
+
+                """{"connected":$isConnected,"ssid":"$ssid","signalLevel":$signalLevel,"ip":"$ip"}"""
+            } catch (e: Exception) {
+                """{"connected":false,"ssid":"","signalLevel":0,"ip":""}"""
             }
         }
     }
