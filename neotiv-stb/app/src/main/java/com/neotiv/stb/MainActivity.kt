@@ -2,10 +2,13 @@ package com.neotiv.stb
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ActivityNotFoundException
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -18,6 +21,8 @@ import android.view.WindowManager
 import android.webkit.*
 import android.widget.FrameLayout
 import android.widget.TextView
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Main kiosk activity — loads the Neotiv TV Dashboard in a fullscreen WebView.
@@ -152,18 +157,12 @@ class MainActivity : Activity() {
                                             val fallbackIntent = Intent.parseUri(fallback, Intent.URI_INTENT_SCHEME)
                                             startActivity(fallbackIntent)
                                         } catch (fallbackEx: Exception) {
-                                            android.widget.Toast.makeText(this@MainActivity, "App Not Installed", android.widget.Toast.LENGTH_SHORT).show()
+                                            openPlayStore(intent.getPackage())
                                         }
                                     }
                                 } else if (url.startsWith("intent://")) {
                                     val pkg = intent.getPackage()
-                                    if (pkg != null) {
-                                        try {
-                                            startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=" + pkg)))
-                                        } catch (ex2: Exception) {
-                                            android.widget.Toast.makeText(this@MainActivity, "App or Store Not Installed", android.widget.Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
+                                    openPlayStore(pkg)
                                 }
                             }
                         } catch (e: Exception) {
@@ -274,6 +273,140 @@ class MainActivity : Activity() {
         """.trimIndent(), null)
     }
 
+    private fun openPlayStore(packageName: String?) {
+        if (packageName.isNullOrBlank()) {
+            android.widget.Toast.makeText(this, "App not installed.", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName")).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        try {
+            startActivity(marketIntent)
+        } catch (_: ActivityNotFoundException) {
+            try {
+                startActivity(webIntent)
+            } catch (_: Exception) {
+                android.widget.Toast.makeText(this, "App not installed and Play Store is unavailable.", android.widget.Toast.LENGTH_LONG).show()
+            }
+        } catch (_: Exception) {
+            try {
+                startActivity(webIntent)
+            } catch (_: Exception) {
+                android.widget.Toast.makeText(this, "App not installed and Play Store is unavailable.", android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun launchInstalledPackage(packageName: String): Boolean {
+        val pkg = packageName.trim()
+        if (pkg.isBlank()) return false
+
+        val pm = packageManager
+        val launchers = listOfNotNull(
+            pm.getLeanbackLaunchIntentForPackage(pkg),
+            pm.getLaunchIntentForPackage(pkg)
+        )
+
+        for (intent in launchers) {
+            try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                return true
+            } catch (_: Exception) {
+                // Try the next launch route.
+            }
+        }
+
+        val categories = listOf(Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER)
+        for (category in categories) {
+            val queryIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(category)
+                setPackage(pkg)
+            }
+            val matches = pm.queryIntentActivities(queryIntent, 0)
+            for (match in matches) {
+                val activityInfo = match.activityInfo ?: continue
+                val componentIntent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(category)
+                    component = ComponentName(activityInfo.packageName, activityInfo.name)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                try {
+                    startActivity(componentIntent)
+                    return true
+                } catch (_: Exception) {
+                    // Keep trying other matches.
+                }
+            }
+        }
+
+        return false
+    }
+
+    private fun launchIntentUri(uri: String): Boolean {
+        return try {
+            val intent = Intent.parseUri(uri, Intent.URI_INTENT_SCHEME).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun parseLaunchRequest(rawRequest: String): Pair<List<String>, String?> {
+        val raw = rawRequest.trim()
+        if (raw.isBlank()) return Pair(emptyList(), null)
+
+        if (raw.startsWith("{")) {
+            return try {
+                val json = JSONObject(raw)
+                val packages = mutableListOf<String>()
+
+                json.optString("packageName").takeIf { it.isNotBlank() }?.let { packages.add(it) }
+                json.optString("package").takeIf { it.isNotBlank() }?.let { packages.add(it) }
+
+                val array = json.optJSONArray("packages")
+                if (array != null) {
+                    for (index in 0 until array.length()) {
+                        array.optString(index).takeIf { it.isNotBlank() }?.let { packages.add(it) }
+                    }
+                }
+
+                val storePackage = json.optString("storePackage")
+                    .takeIf { it.isNotBlank() }
+                    ?: packages.firstOrNull()
+
+                Pair(packages.distinct(), storePackage)
+            } catch (_: Exception) {
+                Pair(listOf(raw), raw)
+            }
+        }
+
+        if (raw.startsWith("[")) {
+            return try {
+                val array = JSONArray(raw)
+                val packages = mutableListOf<String>()
+                for (index in 0 until array.length()) {
+                    array.optString(index).takeIf { it.isNotBlank() }?.let { packages.add(it) }
+                }
+                Pair(packages.distinct(), packages.firstOrNull())
+            } catch (_: Exception) {
+                Pair(listOf(raw), raw)
+            }
+        }
+
+        val packages = raw.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        return Pair(packages, packages.firstOrNull())
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP -> { dispatchJsKey("ArrowUp", "ArrowUp", 38); return true }
@@ -359,20 +492,28 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
-        fun launchExternalApp(packageName: String) {
+        fun launchExternalApp(launchRequest: String) {
             handler.post {
-                try {
-                    val pm = packageManager
-                    val launchIntent = pm.getLaunchIntentForPackage(packageName)
-                    if (launchIntent != null) {
-                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        startActivity(launchIntent)
-                    } else {
-                        android.widget.Toast.makeText(this@MainActivity, "App Not Installed. Please install from Play Store.", android.widget.Toast.LENGTH_SHORT).show()
+                val raw = launchRequest.trim()
+
+                if (raw.startsWith("intent://") || raw.startsWith("market://")) {
+                    if (!launchIntentUri(raw)) {
+                        try {
+                            val intent = Intent.parseUri(raw, Intent.URI_INTENT_SCHEME)
+                            openPlayStore(intent.getPackage())
+                        } catch (_: Exception) {
+                            openPlayStore(null)
+                        }
                     }
-                } catch (e: Exception) {
-                    android.widget.Toast.makeText(this@MainActivity, "Error launching app: " + e.message, android.widget.Toast.LENGTH_SHORT).show()
+                    return@post
                 }
+
+                val (packages, storePackage) = parseLaunchRequest(raw)
+                for (packageName in packages) {
+                    if (launchInstalledPackage(packageName)) return@post
+                }
+
+                openPlayStore(storePackage)
             }
         }
 
